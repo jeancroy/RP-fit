@@ -1,8 +1,12 @@
-
 import pandas as pd
-import xxhash
-import numbers
+
 import pickle
+import requests
+from io import StringIO, BytesIO
+from os import path, listdir
+import re
+import numbers
+
 from tabulate import tabulate
 from IPython.display import display
 
@@ -15,16 +19,14 @@ if USE_AUTOGRAD:
     
 else:
     import numpy as np
+
     
+def download_sheet(file_id, sheet_id):
+    r = requests.get(f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv&id={file_id}&gid={sheet_id}')
+    df = pd.read_csv(BytesIO(r.content), thousands=',')
+    return df
 
-
-def save(filepath, data):
-    with open(filepath,"xb") as handle:
-        pickle.dump(data, handle)
-
-def load(filepath):
-    with open(filepath,"rb") as handle:
-        return pickle.load(handle)
+# Variables vector management 
 
 def pack(source):
 
@@ -54,79 +56,52 @@ def unpack(x, unpack_info):
 
         start, length = v
 
-        if(length==0):
+        if(length == 0):
             unpacked[k] = x[start]
         else:
             unpacked[k] = np.array(x[start:start+length])
     
     return unpacked
 
+# Display anything as a table
 
 def table(data): 
-    display(tabulate(data,tablefmt='html'))
     
-def tabledict(dictionary): 
-    
-    table([( [k]+ (
+    if( isinstance(data,(list,pd.Series,pd.DataFrame,pd.Index)) ):  
+        display(tabulate(data,tablefmt='html'))
+        
+    else:
+        table([( [k]+ (
                 [v] if isinstance(v, (numbers.Number, str) ) else
                 [v] if len(v) < 2 else
                 [np.array2string(v, threshold=10)]
             )
-        ) for k,v in dictionary.items() ])
-
-def tableobj(obj): 
-    tabledict(dict(list_members(obj)))
-    
+        ) for k,v in list_members(data) ])
+        
 def list_members(obj): 
-    
+
     if isinstance(obj, dict):
         return list(obj.items())
-    
+
     return ([ (a, getattr(obj, a) )
               for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a))
             ])
 
-# We mostly rely on numpy to extract byte representation
-# And feed those to the hash.
+# Pickle file management
 
-def _update_hash(v, update):
+def save(filepath, data):
+    with open(filepath,"xb") as handle:
+        pickle.dump(data, handle)
 
-    if isinstance(v, str):
-        update( bytes(v, "utf8") )
-
-    elif isinstance(v, (np.ndarray, np.generic) ):
-        update( v.data.tobytes() )
-
-    elif isinstance(v, pd.Series):
-        update( v.to_numpy().data.tobytes() )
-
-    elif isinstance(v, pd.DataFrame):        
-        update( pd.util.hash_pandas_object(v).to_numpy().data.tobytes() )
-
-    elif isinstance(v, (list,set)):
-        update( np.array(v).data.tobytes() )
-
-    elif isinstance(v, numbers.Number):
-
-        # it is surprisingly hard to convert a single number to bytes in python.
-        # so again we use numpy. This is slow but large quantity of numbers
-        # should be in one of the other data types.
-        np.array([v]).data.tobytes()
-
-    elif isinstance(v, tuple):
-
-        # tuple can store mixed types so we do recursion.
-        for x in v:
-            _update_hash(x, update)
-
-    else:
-
-        # for objects and dict, list members and values then hash them
-        for x in sorted(list_members(v)):
-            _update_hash(x, update)
+def load(filepath):
+    with open(filepath,"rb") as handle:
+        return pickle.load(handle)
     
-    
-def digest(v):
-    x = xxhash.xxh64(seed=0)
-    _update_hash(v, lambda b: x.update(b))
-    return x.hexdigest()
+def last_modified_file_with_pattern(search_path, pattern_str):
+    pattern = re.compile(pattern_str)
+    files = filter(os.path.isfile, os.listdir(search_path))
+    files = [os.path.join(searchdir, f) for f in files if pattern.search(f)]
+    if(len(files)==0): return None
+    if(len(files)==1): return files[0]
+    files.sort(key=lambda x: os.path.getmtime(x))
+    return files[-1]
