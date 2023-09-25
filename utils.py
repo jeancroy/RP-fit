@@ -1,10 +1,21 @@
-import numpy as np
+
 import pandas as pd
 import xxhash
 import numbers
 import pickle
 from tabulate import tabulate
 from IPython.display import display
+
+USE_AUTOGRAD = False
+
+if USE_AUTOGRAD:
+    import autograd.numpy as np 
+    from autograd import grad, jacobian
+    from autograd.builtins import isinstance, tuple
+    
+else:
+    import numpy as np
+    
 
 
 def save(filepath, data):
@@ -89,10 +100,8 @@ def _update_hash(v, update):
     elif isinstance(v, pd.Series):
         update( v.to_numpy().data.tobytes() )
 
-    elif isinstance(v, pd.DataFrame):
-        for col in sorted(v.columns):
-            update( bytes(col, "utf8") )
-            update( v[col].to_numpy().data.tobytes() )
+    elif isinstance(v, pd.DataFrame):        
+        update( pd.util.hash_pandas_object(v).to_numpy().data.tobytes() )
 
     elif isinstance(v, (list,set)):
         update( np.array(v).data.tobytes() )
