@@ -5,9 +5,12 @@ import xxhash
 import numbers
 import datetime
 
-def digest(v):
+def digest(*argv):
     x = xxhash.xxh64(seed=0)
-    _update_hash(v, lambda b: x.update(b))
+    
+    for arg in argv:
+        _update_hash(arg, lambda b: x.update(b))
+    
     return x.hexdigest()
 
 # We mostly rely on numpy to extract byte representation
@@ -15,7 +18,9 @@ def digest(v):
 
 def _update_hash(v, update):
     
-    # alwais update by the type then by the value.
+    # always update by the type, then by the value.
+    # this is to differentiate empty string, empty list, None, 0, False etc.
+    
     update( bytes(str(type(v)), "utf8") )
 
     if isinstance(v, str):
