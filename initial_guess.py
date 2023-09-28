@@ -1,4 +1,4 @@
-from game_model import *
+from game_model import game
 
 def make_initial_guess():
 
@@ -6,7 +6,7 @@ def make_initial_guess():
 
     initial = { }
 
-    # Load Initial guess for the ing% and skillProduct ( skill% * skillValue ) from pokedex 
+    # Load Initial guess for the ing% and skillProduct ( skill% * skillValue ) from Pokedex
 
     previous_ing_fractions = []
     previous_skl_products = []
@@ -20,7 +20,7 @@ def make_initial_guess():
     initial["Pokemons ing fractions"] = previous_ing_fractions
     initial["Pokemons skill products"] = previous_skl_products
 
-    # Intial guess for skill growth
+    # Initial guess for skill growth,
     # We assume that the conversion from level 1 to level L
     # Has the shape a*exp(b*L). Initial guess for a,b fitted on charge strength
 
@@ -30,16 +30,18 @@ def make_initial_guess():
 
     # Initial guess for ingredient growth.
     # Comes from a previous fit
-    # Numpy poly convention is highest degree first
+    # Numpy poly convention is the highest degree first
 
     initial["Ing Growth Poly"] = [0.00018948, 0.00306669, -0.00173611] 
 
-    # Add our guess for the sub skills that multiply the whole rp
+    # Add our guess for the sub-skills that multiply the whole rp
 
     subskills = game.subskills.data
     bonus = subskills[ subskills["Subskill"].isin(game.subskills.bonus_names) ]
 
     for record in bonus.to_dict(orient='records') :
         initial[record["Subskill"]] = record["RP Bonus Estimate"]
+
+    initial["Ing 2 Weigth"] = 1.0
 
     return initial

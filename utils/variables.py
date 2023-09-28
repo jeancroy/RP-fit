@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import numbers
-
     
 def pack(source):
 
@@ -34,6 +33,9 @@ def unpack(x, unpack_info):
         if(length == 0):
             unpacked[k] = x[start]
         else:
-            unpacked[k] = np.array(x[start:start+length])
+            unpacked[k] = x[start:start+length]
     
-    return unpacked   
+    return unpacked
+
+def lookup_table( serie1, table2, table2_lookup_column, table2_return_column ):
+    return serie1.map(table2.set_index(table2_lookup_column)[table2_return_column])
