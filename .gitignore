@@ -153,3 +153,5 @@ cython_debug/
 
 # others
 ideas/
+.idea/misc.xml
+.idea/modules.xml
