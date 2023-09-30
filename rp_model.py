@@ -3,9 +3,9 @@ from types import SimpleNamespace
 
 from game_model import game
 from utils.variables import unpack
-    
-def get_model(variables, _data, _computed, _unpack_info):
 
+
+def get_model(variables, _data, _computed, _unpack_info):
     model = SimpleNamespace()
     model.data = _data
     model.computed = _computed
@@ -14,135 +14,131 @@ def get_model(variables, _data, _computed, _unpack_info):
 
 
 def total_ing_value(model):
-              
     ing1_amount = 1.0 + model.computed.has_class["Ingredients"]
     ing2_amount = model.computed.ing2_amount
-    
+
     ing1_power = model.computed.ing1_power_base
     ing2_power = model.computed.ing2_power_base
-    
-    ing1_weigth = 1.0
-    ing2_weigth = model.vars["Ing 2 Weigth"] * (model.computed.ing2_amount > 0)
+
+    ing1_weigh = 1.0
+    ing2_weigh = model.vars["Ing 2 Weigh"] * (model.computed.ing2_amount > 0)
 
     # weighted average of the N ingredients and their amount
-    ing_value  = ing1_weigth * ing1_amount * ing1_power
-    ing_value += ing2_weigth * ing2_amount * ing2_power
-    ing_value /= ( ing1_weigth + ing2_weigth )
-    
+    ing_value = ing1_weigh * ing1_amount * ing1_power
+    ing_value += ing2_weigh * ing2_amount * ing2_power
+    ing_value /= (ing1_weigh + ing2_weigh)
+
     # Add the growth curve
     ing_value *= ing_growth(model)
-    
+
     return ing_value
 
+
 def ing_growth(model):
-    
     a = model.vars["Ing Growth Poly"]
     x = model.data["Level"].to_numpy()
     g = ((a[0] * x) + a[1]) * x + a[2]
-    return  ( 1.0 + g )
+    return (1.0 + g)
+
 
 def ber_amount(model):
-    
     return 1.0 + model.computed.has_class["Berries"] + model.computed.has_subskill["Berry Finding S"]
 
+
 def ber_value_at_level(model):
-    
     return model.computed.berry_power_at_level
 
+
 def ing_fraction(model):
-    
-    return model.vars["Pokemons ing fractions"][ model.computed.ing_positions ]
+    return model.vars["Pokemons ing fractions"][model.computed.ing_positions]
+
 
 def skl_product(model):
-    
-    return model.vars["Pokemons skill products"][ model.computed.skl_positions ]
+    return model.vars["Pokemons skill products"][model.computed.skl_positions]
+
 
 def skl_growth(model):
-    
     a = np.array(list(map(lambda x: model.vars[x][0], model.data["MSkill"])))
-    b = np.array(list(map(lambda x: model.vars[x][1], model.data["MSkill"]))) 
- 
-    growth = a * np.exp( b * model.data["MS lvl"].to_numpy() )
-    growth[ model.data["MS lvl"] == 1] = 1.0
-    
+    b = np.array(list(map(lambda x: model.vars[x][1], model.data["MSkill"])))
+
+    growth = a * np.exp(b * model.data["MS lvl"].to_numpy())
+    growth[model.data["MS lvl"] == 1] = 1.0
+
     return growth
 
 
 def ing_modifier(model):
-    
     nature_correction = (
-        1.0
-        + (model.computed.has_positive_trait["Ingredient Finding"] * game.natures.ing_effect) 
-        - (model.computed.has_negative_trait["Ingredient Finding"] * game.natures.ing_effect)
-        )
+            1.0
+            + (model.computed.has_positive_trait["Ingredient Finding"] * game.natures.ing_effect)
+            - (model.computed.has_negative_trait["Ingredient Finding"] * game.natures.ing_effect)
+    )
 
     subskill_correction = (
-        1.0
-        + (model.computed.has_subskill["Ingredient Finder S"] * game.subskills.ing_s_effect) 
-        + (model.computed.has_subskill["Ingredient Finder M"] * game.subskills.ing_m_effect)
-        )
-    
+            1.0
+            + (model.computed.has_subskill["Ingredient Finder S"] * game.subskills.ing_s_effect)
+            + (model.computed.has_subskill["Ingredient Finder M"] * game.subskills.ing_m_effect)
+    )
+
     return nature_correction * subskill_correction
 
 
 def skl_modifier(model):
-       
     nature_correction = (
-        1.0
-        + (model.computed.has_positive_trait["Main Skill Chance"] * game.natures.msc_effect) 
-        - (model.computed.has_negative_trait["Main Skill Chance"] * game.natures.msc_effect)
-        )
+            1.0
+            + (model.computed.has_positive_trait["Main Skill Chance"] * game.natures.msc_effect)
+            - (model.computed.has_negative_trait["Main Skill Chance"] * game.natures.msc_effect)
+    )
 
     subskill_correction = (
-        1.0
-        + (model.computed.has_subskill["Skill Trigger S"] * game.subskills.trigger_s_effect) 
-        + (model.computed.has_subskill["Skill Trigger M"] * game.subskills.trigger_m_effect)
-        )
-    
+            1.0
+            + (model.computed.has_subskill["Skill Trigger S"] * game.subskills.trigger_s_effect)
+            + (model.computed.has_subskill["Skill Trigger M"] * game.subskills.trigger_m_effect)
+    )
+
     return nature_correction * subskill_correction
 
+
 def energy_modifier(model):
-        
     return (
-        1.0
-        + (model.computed.has_positive_trait["Energy Recovery"] * game.natures.energy_effect)
-        - (model.computed.has_negative_trait["Energy Recovery"] * game.natures.energy_effect)
-        )
+            1.0
+            + (model.computed.has_positive_trait["Energy Recovery"] * game.natures.energy_effect)
+            - (model.computed.has_negative_trait["Energy Recovery"] * game.natures.energy_effect)
+    )
+
 
 def fractional_help_count(model):
-     return 5.0 * model.computed.helps_per_hour
+    return 5.0 * model.computed.helps_per_hour
+
 
 def bonus_subskill(model):
-    
     bonus = 1.0
-    
+
     for name in game.subskills.bonus_names:
-        bonus = bonus + model.computed.has_subskill[ name ] * model.vars[ name ]
-    
+        bonus = bonus + model.computed.has_subskill[name] * model.vars[name]
+
     return bonus
 
 
 def compute_rp(variables, _data, _computed, _unpack_info):
-    
     m = get_model(variables, _data, _computed, _unpack_info)
-    
+
     ing = ing_fraction(m) * ing_modifier(m)
-    
+
     ingredients_value = ing * total_ing_value(m)
-    berries_value =  (1.0-ing) * ber_amount(m) * ber_value_at_level(m)
-    mainskill_value = skl_product(m) * skl_modifier(m) * skl_growth(m)
-    
-    help_count = fractional_help_count(m)   
+    berries_value = (1.0 - ing) * ber_amount(m) * ber_value_at_level(m)
+    main_skill_value = skl_product(m) * skl_modifier(m) * skl_growth(m)
+
+    help_count = fractional_help_count(m)
     energy_correction = energy_modifier(m)
     bonus = bonus_subskill(m)
-        
-    rp = bonus * help_count * energy_correction * (ingredients_value + berries_value + mainskill_value)
-    
+
+    rp = bonus * help_count * energy_correction * (ingredients_value + berries_value + main_skill_value)
+
     return rp
 
 
 def make_precomputed_columns(data):
-
     computed = SimpleNamespace()
 
     # All the formula "IF" are implemented as one-hot vector  (0,1)
@@ -174,13 +170,12 @@ def make_precomputed_columns(data):
     subskills = game.subskills.data
     subs = subskills["Subskill"].unique()
 
-    computed.has_subskill = dict([(s,
-                                   (((data["Sub Skill 1"] == s) & (data["Level"] >= 10)) |
-                                    ((data["Sub Skill 2"] == s) & (data["Level"] >= 25))
-                                    ).astype(int).to_numpy()
-                                   )
-                                  for s in subs
-                                  ])
+    computed.has_subskill = \
+        dict([(s, (
+                      ((data["Sub Skill 1"] == s) & (data["Level"] >= 10)) |
+                      ((data["Sub Skill 2"] == s) & (data["Level"] >= 25))
+                  ).astype(int).to_numpy()
+               ) for s in subs])
 
     # Food
     # We could redo that work, but it's not related to the optimization
