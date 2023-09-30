@@ -1,4 +1,4 @@
-This directory contains Jupyter Notebooks that analyse the data from the 
+This directory contains Jupyter Notebooks that analyze the data from the 
 
 [RP collection project](https://docs.google.com/spreadsheets/d/1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs/edit#gid=1673887151)
 
