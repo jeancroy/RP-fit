@@ -133,7 +133,9 @@ def compute_rp(variables, _data, _computed, _unpack_info):
     energy_correction = energy_modifier(m)
     bonus = bonus_subskill(m)
 
-    rp = bonus * help_count * energy_correction * (ingredients_value + berries_value + main_skill_value)
+    floored_bonus = np.floor(100.0 * bonus * energy_correction) / 100.0
+
+    rp = floored_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
     return rp
 
