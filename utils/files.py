@@ -16,7 +16,7 @@ def download_sheet(file_id, sheet_id):
 # Pickle file management
 
 def save(filepath, data):
-    with open(filepath, "xb") as handle:
+    with open(filepath, "wb") as handle:
         pickle.dump(data, handle)
 
 

@@ -32,7 +32,7 @@ def make_initial_guess():
     # Comes from a previous fit
     # Numpy poly convention is the highest degree first
 
-    initial["Ing Growth Poly"] = np.array([0.00018948, 0.00306669, -0.00173611])
+    initial["Ing Growth Poly"] = np.array( [0.00018281, 0.00325739, -0.00238269] )
 
     # Add our guess for the sub-skills that multiply the whole rp
 
@@ -41,7 +41,5 @@ def make_initial_guess():
 
     for record in bonus.to_dict(orient='records'):
         initial[record["Subskill"]] = record["RP Bonus Estimate"]
-
-    initial["Ing 2 Weigh"] = 1.0
 
     return initial

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from game_model import game
 from utils.variables import unpack
+from utils.soft_round import soft_round, soft_floor
 
 
 def get_model(variables, _data, _computed, _unpack_info):
@@ -20,12 +21,13 @@ def total_ing_value(model):
     ing1_power = model.computed.ing1_power_base
     ing2_power = model.computed.ing2_power_base
 
+    # Equal weigh of 1 has been confirmed
     ing1_weigh = 1.0
-    ing2_weigh = model.vars["Ing 2 Weigh"] * (model.computed.ing2_amount > 0)
+    ing2_weigh = (model.computed.ing2_amount > 0)
 
     # weighted average of the N ingredients and their amount
-    ing_value = ing1_weigh * ing1_amount * ing1_power
-    ing_value += ing2_weigh * ing2_amount * ing2_power
+    ing_value = ing1_amount * ing1_power
+    ing_value += ing2_amount * ing2_power
     ing_value /= (ing1_weigh + ing2_weigh)
 
     # Add the growth curve
@@ -133,11 +135,11 @@ def compute_rp(variables, _data, _computed, _unpack_info):
     energy_correction = energy_modifier(m)
     bonus = bonus_subskill(m)
 
-    floored_bonus = np.floor(100.0 * bonus * energy_correction) / 100.0
+    floored_bonus = soft_floor(100.0 * bonus * energy_correction) / 100.0
 
     rp = floored_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
-    return rp
+    return soft_round(rp)
 
 
 def make_precomputed_columns(data):
