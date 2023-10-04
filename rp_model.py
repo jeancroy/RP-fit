@@ -3,7 +3,8 @@ from types import SimpleNamespace
 
 from game_model import game
 from utils.variables import unpack
-from utils.soft_round import soft_round, soft_floor
+from utils.soft_round import soft_round, soft_floor_top
+from fit_options import fit_options, RoundApprox
 
 
 def get_model(variables, _data, _computed, _unpack_info):
@@ -135,11 +136,25 @@ def compute_rp(variables, _data, _computed, _unpack_info):
     energy_correction = energy_modifier(m)
     bonus = bonus_subskill(m)
 
-    rounded_bonus = soft_round(100.0 * bonus * energy_correction) / 100.0
+    if fit_options.bonus_rounding == RoundApprox.Soft:
+        rounded_bonus = soft_floor_top(100.0 * bonus * energy_correction) / 100.0
+
+    elif fit_options.bonus_rounding == RoundApprox.Exact:
+        rounded_bonus = np.floor(100.0 * bonus * energy_correction) / 100.0
+
+    else:
+        rounded_bonus = bonus * energy_correction
 
     rp = rounded_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
-    return soft_round(rp)
+    if fit_options.rp_rounding == RoundApprox.Soft:
+        return soft_round(rp)
+
+    elif fit_options.rp_rounding == RoundApprox.Exact:
+        return np.round(rp)
+
+    else:
+        return rp
 
 
 def make_precomputed_columns(data):
@@ -154,7 +169,7 @@ def make_precomputed_columns(data):
 
     # Natures
 
-    natures = game.natures.data
+    natures = game.data.natures
     traits = natures["TraitPos"].unique()
 
     natures_with_positive_trait = \
@@ -171,13 +186,13 @@ def make_precomputed_columns(data):
 
     # Sub-skills
 
-    subskills = game.subskills.data
+    subskills = game.data.subskills
     subs = subskills["Subskill"].unique()
 
     computed.has_subskill = \
         dict([(s, (
-                      ((data["Sub Skill 1"] == s) & (data["Level"] >= 10)) |
-                      ((data["Sub Skill 2"] == s) & (data["Level"] >= 25))
+                    ((data["Sub Skill 1"] == s) & (data["Level"] >= 10)) |
+                    ((data["Sub Skill 2"] == s) & (data["Level"] >= 25))
                   ).astype(int).to_numpy()
                ) for s in subs])
 
@@ -215,7 +230,7 @@ def make_precomputed_columns(data):
 
     pokemon_to_position = {}
 
-    pokemons = game.pokedex.data["Pokemon"]
+    pokemons = game.data.pokedex["Pokemon"]
     pokemon_to_position = dict(zip(pokemons, range(len(pokemons))))
 
     data_pokemon_positions = np.array(list(map(lambda x: pokemon_to_position[x], data["Pokemon"])))

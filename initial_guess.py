@@ -12,7 +12,7 @@ def make_initial_guess():
     previous_ing_fractions = []
     previous_skl_products = []
 
-    for record in game.pokedex.data.to_dict(orient='records'):
+    for record in game.data.pokedex.to_dict(orient='records'):
         # Last fit
         previous_ing_fractions.append(record["Last fit ing"])
         previous_skl_products.append(record["Last fit skl"])
@@ -24,7 +24,7 @@ def make_initial_guess():
     # We assume that the conversion from level 1 to level L
     # Has the shape a*exp(b*L). Initial guess for a,b fitted on charge strength
 
-    for record in game.mainskills.data.to_dict(orient='records'):
+    for record in game.data.mainskills.to_dict(orient='records'):
         skill_name = record["Skill"]
         initial[skill_name] = np.array([0.7462, 0.3224])
 
@@ -32,11 +32,11 @@ def make_initial_guess():
     # Comes from a previous fit
     # Numpy poly convention is the highest degree first
 
-    initial["Ing Growth Poly"] = np.array( [0.00018281, 0.00325739, -0.00238269] )
+    initial["Ing Growth Poly"] = np.array( [0.00018848, 0.00314556, 0.0033453] )
 
     # Add our guess for the sub-skills that multiply the whole rp
 
-    subskills = game.subskills.data
+    subskills = game.data.subskills
     bonus = subskills[subskills["Subskill"].isin(game.subskills.bonus_names)]
 
     for record in bonus.to_dict(orient='records'):

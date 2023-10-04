@@ -5,18 +5,18 @@ import numbers
 from tabulate import tabulate
 from IPython.display import display
 
+
 # Display anything as a table
-def table(data):
+def table(data, **kwargs):
     if (isinstance(data, (list, pd.Series, pd.DataFrame, pd.Index))):
-        display(tabulate(data, tablefmt='html'))
+        display(tabulate(data, tablefmt='html', **kwargs))
 
     else:
-        table([([k] + (
-            [v] if isinstance(v, (numbers.Number, str)) else
-            [v] if len(v) < 2 else
-            [np.array2string(v, threshold=10)]
-        )
-                ) for k, v in _list_members(data)])
+        table([
+            ([k] + ([v] if isinstance(v, (numbers.Number, str)) else
+                    [v] if len(v) < 2 else
+                    [np.array2string(v, threshold=10)]))
+            for k, v in _list_members(data)], **kwargs)
 
 
 def _list_members(obj):
@@ -26,4 +26,3 @@ def _list_members(obj):
     return ([(a, getattr(obj, a))
              for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a))
              ])
-
