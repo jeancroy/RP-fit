@@ -13,13 +13,11 @@ def table(data, **kwargs):
 
     else:
         table([
-            ([k] + ([v] if isinstance(v, (numbers.Number, str)) else
-                    [v] if len(v) < 2 else
-                    [np.array2string(v, threshold=10)]))
-            for k, v in _list_members(data)], **kwargs)
+            ([k] + ([np.array2string(v, threshold=10)] if isinstance(v, np.ndarray) else [str(v)]))
+            for k, v in list_members(data)], **kwargs)
 
 
-def _list_members(obj):
+def list_members(obj):
     if isinstance(obj, dict):
         return list(obj.items())
 
