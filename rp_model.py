@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 from game_model import game
 from utils.variables import unpack
-from utils.soft_round import soft_round, soft_floor_top
-from fit_options import fit_options, RoundApprox
+from utils.rounding import optional_floor, optional_round
+from fit_options import fit_options
 
 
 def get_model(variables, _data, _computed, _unpack_info):
@@ -136,25 +136,10 @@ def compute_rp(variables, _data, _computed, _unpack_info):
     energy_correction = energy_modifier(m)
     bonus = bonus_subskill(m)
 
-    if fit_options.bonus_rounding == RoundApprox.Soft:
-        rounded_bonus = soft_floor_top(100.0 * bonus * energy_correction) / 100.0
-
-    elif fit_options.bonus_rounding == RoundApprox.Exact:
-        rounded_bonus = np.floor(100.0 * bonus * energy_correction) / 100.0
-
-    else:
-        rounded_bonus = bonus * energy_correction
-
+    rounded_bonus = optional_floor(bonus * energy_correction, fit_options.bonus_rounding, 0.01)
     rp = rounded_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
-    if fit_options.rp_rounding == RoundApprox.Soft:
-        return soft_round(rp)
-
-    elif fit_options.rp_rounding == RoundApprox.Exact:
-        return np.round(rp)
-
-    else:
-        return rp
+    return optional_round(rp, fit_options.rp_rounding, 1.0)
 
 
 def make_precomputed_columns(data):

@@ -34,7 +34,7 @@ def make_initial_guess():
 
     initial["Ing Growth Poly"] = np.array( [0.00018848, 0.00314556, 0.0033453] )
 
-    # Add our guess for the sub-skills that multiply the whole rp
+    # Add our guess for the subskills that multiply the whole rp
 
     subskills = game.data.subskills
     bonus = subskills[subskills["Subskill"].isin(game.subskills.bonus_names)]
