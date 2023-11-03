@@ -18,70 +18,70 @@ def digest(*argv):
 # We mostly rely on numpy to extract byte representation
 # And feed those to the hash.
 
-def _update_hash(v, update):
+def _update_hash(val, update):
     # always update by the type, then by the value.
     # this is to differentiate empty string, empty list, None, 0, False etc.
 
-    update(bytes(str(type(v)), "utf8"))
+    update(bytes(str(type(val)), "utf8"))
 
-    if isinstance(v, str):
-        update(bytes(v, "utf8"))
+    if isinstance(val, str):
+        update(bytes(val, "utf8"))
         return
 
-    if isinstance(v, (bytes, bytearray)):
-        update(v)
+    if isinstance(val, (bytes, bytearray)):
+        update(val)
         return
 
-    if isinstance(v, (numbers.Number, datetime.date, bool)):
+    if isinstance(val, (numbers.Number, datetime.date, bool)):
         # Use numpy scalar to get bytes
-        update(np.array(v).data.tobytes())
+        update(np.array(val).data.tobytes())
         return
 
-    if v is None:
+    if val is None:
         update(b'')
 
-    if isinstance(v, pd.Series):
+    if isinstance(val, pd.Series):
         # Convert to numpy then do the numpy logic
-        v = v.to_numpy()
+        val = val.to_numpy()
 
-    if isinstance(v, (np.ndarray, np.generic)):
+    if isinstance(val, (np.ndarray, np.generic)):
 
         # If we have a uniform basic type, get bytes from numpy, otherwise recurse. 
         # Uses .item() to convert from a numpy object to python
 
-        if v.dtype is not np.dtype('O'):
-            update(v.data.tobytes())
+        if val.dtype is not np.dtype('O'):
+            update(val.data.tobytes())
         else:
-            for x in v:
+            for x in val:
                 _update_hash(x.item(), update)
         return
 
-    if isinstance(v, (pd.DataFrame, pd.Index)):
+    if isinstance(val, (pd.DataFrame, pd.Index)):
         # hash_pandas_object return one hash per row, so we only use it on complex objects
-        update(pd.util.hash_pandas_object(v).to_numpy().data.tobytes())
+        update(pd.util.hash_pandas_object(val).to_numpy().data.tobytes())
         return
 
-    if isinstance(v, (list, set, tuple)):
+    if isinstance(val, (list, set, tuple)):
 
         # If we have a uniform basic type, get bytes from numpy, otherwise recurse. 
 
         try:
-            arr = np.array(v)
+            arr = np.array(val)
             if arr.dtype is not np.dtype('O'):
                 update(arr.data.tobytes())
             else:
-                for x in v:
+                for x in val:
                     _update_hash(x, update)
             return
 
         except (ValueError, TypeError):
-            for x in v:
+            for x in val:
                 _update_hash(x, update)
             return
 
     else:
 
-        members = sorted(_list_members(v))
+        members = sorted(_list_members(val))
 
         # for objects and dict, we list (members, values) and hash those
         if (len(members) > 0):
@@ -91,7 +91,7 @@ def _update_hash(v, update):
 
         else:
             # if properties are not iterables, use string representation
-            update(bytes(str(v), "utf8"))
+            update(bytes(str(val), "utf8"))
             return
 
 

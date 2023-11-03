@@ -4,17 +4,25 @@ import numbers
 
 from tabulate import tabulate
 from IPython.display import display
+import sys
 
 
 # Display anything as a table
 def table(data, **kwargs):
+
+    tablefmt = 'html' if in_notebook() else 'plain'
+
     if (isinstance(data, (list, pd.Series, pd.DataFrame, pd.Index))):
-        display(tabulate(data, tablefmt='html', **kwargs))
+        display(tabulate(data, tablefmt=tablefmt, **kwargs))
 
     else:
         table([
             ([k] + ([np.array2string(v, threshold=10)] if isinstance(v, np.ndarray) else [str(v)]))
             for k, v in list_members(data)], **kwargs)
+
+
+def in_notebook():
+    return 'ipykernel' in sys.modules
 
 
 def list_members(obj):

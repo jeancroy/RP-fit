@@ -22,12 +22,16 @@ class RoundDirection(Enum):
     Ceil = 1
 
 
+def floor(value, resolution=1.0):
+    return np.floor(value / resolution) * resolution
+
+
 def optional_floor(value, approx_option, resolution=1.0):
     if approx_option == RoundApprox.Soft:
         return soft_floor(value / resolution) * resolution
 
     elif approx_option == RoundApprox.Exact:
-        return np.floor(value / resolution) * resolution
+        return floor(value, resolution)
 
     else:
         return value
@@ -92,7 +96,7 @@ def progressive_soft_round_loop(x0, optim_func, alpha_progression=None):
     if (not soft_round_options.use_progressive_alpha):
         return optim_func(x0)
 
-    if(alpha_progression is None):
+    if (alpha_progression is None):
         alpha_progression = soft_round_options.alpha_progression
 
     x = x0

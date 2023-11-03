@@ -1,11 +1,14 @@
-from game_model import game
+from model.game import game
+from utils.variables import RangeInfo
+
 import numpy as np
 
 
 def make_initial_guess():
     # Here we build the initial guess
 
-    initial = {}
+    initial_guess = {}
+    range_info = {}
 
     # Load Initial guess for the ing% and skillProduct ( skill% * skillValue ) from Pokedex
 
@@ -17,8 +20,11 @@ def make_initial_guess():
         previous_ing_fractions.append(record["Last fit ing"])
         previous_skl_products.append(record["Last fit skl"])
 
-    initial["Pokemons ing fractions"] = np.array(previous_ing_fractions)
-    initial["Pokemons skill products"] = np.array(previous_skl_products)
+    initial_guess["Pokemons ing fractions"] = np.array(previous_ing_fractions)
+    initial_guess["Pokemons skill products"] = np.array(previous_skl_products)
+
+    range_info["Pokemons ing fractions"] = RangeInfo(0.1, 0.3)
+    range_info["Pokemons skill products"] = RangeInfo(5.0, 70.0)
 
     # Initial guess for skill growth,
     # We assume that the conversion from level 1 to level L
@@ -26,13 +32,15 @@ def make_initial_guess():
 
     for record in game.data.mainskills.to_dict(orient='records'):
         skill_name = record["Skill"]
-        initial[skill_name] = np.array([0.7462, 0.3224])
+        initial_guess[skill_name] = np.array([0.7462, 0.3224])
+        range_info[skill_name] = RangeInfo(0.2, 0.9)
 
     # Initial guess for ingredient growth.
     # Comes from a previous fit
     # Numpy poly convention is the highest degree first
 
-    initial["Ing Growth Poly"] = np.array( [0.00018848, 0.00314556, 0.0033453] )
+    initial_guess["Ing Growth Poly"] = np.array([0.00018848, 0.00314556, 0.0033453])
+    range_info["Ing Growth Poly"] = RangeInfo(-0.005, 0.005)
 
     # Add our guess for the subskills that multiply the whole rp
 
@@ -40,6 +48,7 @@ def make_initial_guess():
     bonus = subskills[subskills["Subskill"].isin(game.subskills.bonus_names)]
 
     for record in bonus.to_dict(orient='records'):
-        initial[record["Subskill"]] = record["RP Bonus Estimate"]
+        initial_guess[record["Subskill"]] = record["RP Bonus Estimate"]
+        range_info[record["Subskill"]] = RangeInfo(0.05, 0.30)
 
-    return initial
+    return (initial_guess, range_info)

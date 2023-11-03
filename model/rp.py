@@ -1,18 +1,18 @@
 import numpy as np
 from types import SimpleNamespace
 
-from game_model import game
+from model.game import game
 from utils.variables import unpack
-from utils.rounding import optional_floor, optional_round
-from fit_options import fit_options
+from utils.rounding import optional_floor, optional_round, floor
+from model.fit_options import fit_options
+from utils.hash import digest
 
 
-def get_model(variables, _data, _computed, _unpack_info):
-    model = SimpleNamespace()
-    model.data = _data
-    model.computed = _computed
-    model.vars = unpack(variables, _unpack_info)
-    return model
+class RPModelData():
+    def __init__(self, data, computed, variables):
+        self.data = data
+        self.computed = computed
+        self.vars = variables
 
 
 def total_ing_value(model):
@@ -123,8 +123,23 @@ def bonus_subskill(model):
     return bonus
 
 
-def compute_rp(variables, _data, _computed, _unpack_info):
-    m = get_model(variables, _data, _computed, _unpack_info)
+def compute_rp(variables, data, computed, unpack_info):
+
+    if (computed is None):
+        computed = make_precomputed_columns(data)
+
+    unpacked = unpack(variables, unpack_info)
+    m = RPModelData(data, computed, unpacked)
+
+    #print("variables", digest(variables))
+    #print("unpacked", digest(unpacked))
+    #print("model", digest(m))
+
+
+#     return compute_rp_from_model(model)
+#
+#
+# def compute_rp_from_model(m):
 
     ing = ing_fraction(m) * ing_modifier(m)
 
@@ -136,10 +151,40 @@ def compute_rp(variables, _data, _computed, _unpack_info):
     energy_correction = energy_modifier(m)
     bonus = bonus_subskill(m)
 
-    rounded_bonus = optional_floor(bonus * energy_correction, fit_options.bonus_rounding, 0.01)
+    # Optional flooring of the three main components in RP.
+    # (This does not seem to improve the guess, maybe they are multiplied by help count then floored ?)
+    ingredients_value = optional_floor(ingredients_value, fit_options.rounding.components, 0.01)
+    berries_value = optional_floor(berries_value, fit_options.rounding.components, 0.01)
+    main_skill_value = optional_floor(main_skill_value, fit_options.rounding.components, 0.01)
+
+    # Optional flooring of the bonus together with energy
+    rounded_bonus = optional_floor(bonus * energy_correction, fit_options.rounding.bonus, 0.01)
+
+    # core rp formula
     rp = rounded_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
-    return optional_round(rp, fit_options.rp_rounding, 1.0)
+    # Optional final rounding of RP value
+    return rp #optional_round(rp, fit_options.rounding.final_rp, 1.0)
+
+
+# Minimum columns for data:
+# ------------------------
+# Pokemon
+# Nature
+# Level
+# MS Level
+# Sub Skill 1
+# Sub Skill 2
+# Ing2P
+# Amnt
+#
+# Also required, but we could compute from dex
+# ---------------------------------------------
+# Class
+# Freq1
+# Ing1P
+# Berry1
+# BerryL
 
 
 def make_precomputed_columns(data):
@@ -176,8 +221,8 @@ def make_precomputed_columns(data):
 
     computed.has_subskill = \
         dict([(s, (
-                    ((data["Sub Skill 1"] == s) & (data["Level"] >= 10)) |
-                    ((data["Sub Skill 2"] == s) & (data["Level"] >= 25))
+                    ((data["Sub Skill 1"].str.lower() == s.lower()) & (data["Level"] >= 10)) |
+                    ((data["Sub Skill 2"].str.lower() == s.lower()) & (data["Level"] >= 25))
                   ).astype(int).to_numpy()
                ) for s in subs])
 
@@ -196,7 +241,7 @@ def make_precomputed_columns(data):
     computed.period_level = computed.period_base * ((501 - data["Level"].to_numpy()) / 500.0)
 
     nature_correction = (
-            1  # Speed is the only nature where positive effect is a substraction
+            1  # Speed is the only nature where positive effect is a subtraction
             - (computed.has_positive_trait["Speed of Help"] * game.natures.soh_effect)
             + (computed.has_negative_trait["Speed of Help"] * game.natures.soh_effect)
     )
@@ -207,9 +252,14 @@ def make_precomputed_columns(data):
             - (computed.has_subskill["Helping Speed M"] * game.subskills.help_m_effect)
     )
 
-    data_period_level_nature_subskill = computed.period_level * nature_correction * subskill_correction
+    final_period = computed.period_level * nature_correction * subskill_correction
 
-    computed.helps_per_hour = np.floor(100 * 3600 / data_period_level_nature_subskill) / 100
+    # We are not sure if we need to floor the time period
+    final_period = optional_floor(
+        final_period, fit_options.rounding.period, 0.01)
+
+    # But we are almost certain we need to floor the help per hour
+    computed.helps_per_hour = floor(3600 / final_period, 0.01)
 
     # map data point to a pokemon index
 

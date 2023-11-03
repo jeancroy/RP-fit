@@ -1,6 +1,6 @@
 import pickle
 import requests
-from io import StringIO, BytesIO
+from io import BytesIO
 import os
 import re
 
@@ -25,11 +25,17 @@ def load(filepath):
         return pickle.load(handle)
 
 
+def isfile(filepath):
+    return os.path.isfile(filepath)
+
+
 def last_modified_file_with_pattern(search_path, pattern_str):
     pattern = re.compile(pattern_str)
     files = filter(os.path.isfile, os.listdir(search_path))
     files = [os.path.join(search_path, f) for f in files if pattern.search(f)]
-    if (len(files) == 0): return None
-    if (len(files) == 1): return files[0]
+    if (len(files) == 0):
+        return None
+    if (len(files) == 1):
+        return files[0]
     files.sort(key=lambda x: os.path.getmtime(x))
     return files[-1]
