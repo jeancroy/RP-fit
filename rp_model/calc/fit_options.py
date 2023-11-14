@@ -1,8 +1,8 @@
 import os.path
 from types import SimpleNamespace
 
-from rp_model.const import get_files_directory
-from rp_model.utils import RoundApprox, soft_round_options
+from ..const import get_files_directory
+from ..utils import RoundApprox, soft_round_options
 
 
 class FitOptions:

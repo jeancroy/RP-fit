@@ -1,7 +1,7 @@
-from rp_model.calc import game
-from rp_model.utils import RangeInfo
-
 import numpy as np
+
+from .game import game
+from ..utils import RangeInfo
 
 
 def make_initial_guess():

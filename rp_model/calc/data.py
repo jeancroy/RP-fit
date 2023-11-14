@@ -1,8 +1,8 @@
 import pandas as pd
 
-from rp_model.utils import download_sheet
 from .fit_options import FitOptions
 from .game import game
+from ..utils import download_sheet
 
 
 # %%

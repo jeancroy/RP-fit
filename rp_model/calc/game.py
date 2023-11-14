@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pandas as pd
 
-from rp_model.const import get_files_directory
+from ..const import get_files_directory
 
 
 class GameData:

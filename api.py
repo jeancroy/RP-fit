@@ -1,14 +1,14 @@
 import pandas as pd
 import scipy
 
-from rp_model.const import set_files_directory
+from .rp_model.const import set_files_directory
 
 set_files_directory("./files")
 
-from rp_model.calc import (  # noqa: E402
+from .rp_model.calc import (  # noqa: E402
     compute_rp, download_data, FitOptions, game, make_initial_guess, make_precomputed_columns, refresh_pokedex,
 )
-from rp_model.utils import digest, pack, save, simplify_opt_result, try_load, unpack, table  # noqa: E402
+from .rp_model.utils import digest, pack, save, simplify_opt_result, try_load, unpack, table  # noqa: E402
 
 
 def update_fit_cached():
