@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from ..const import get_files_directory
 from ..utils import RoundApprox, soft_round_options
 
+print(f"RP model file path: {get_files_directory()}")
 
 class FitOptions:
     data_file = f"{get_files_directory()}/data/rp-data.pickle"
