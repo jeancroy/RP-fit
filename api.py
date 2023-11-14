@@ -16,13 +16,15 @@ def update_fit_cached():
 
     hashid = digest(data, x0)
     filepath = FitOptions.get_result_file(hashid)
+    print(f"RP model pickle location (to check): {filepath}")
     opt = try_load(filepath)
 
     if opt is None:
+        print(f"RP model pickle hash mismatch, generating new file...")
         opt = run_optimizer(data, x0, unpack_info)
         save(filepath, simplify_opt_result(opt))
     else:
-        print("RP Model loaded from cache")
+        print("RP Model pickle loaded from cache")
 
     sol = unpack(opt.x, unpack_info)
 
