@@ -4,7 +4,7 @@ import numpy as np
 
 from .fit_options import FitOptions
 from .game import game
-from ..utils import floor, optional_floor, unpack
+from ..utils import floor, optional_floor, optional_round, unpack
 
 
 class RPModelData:
@@ -161,7 +161,7 @@ def compute_rp(variables, data, computed, unpack_info):
     rp = rounded_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
     # Optional final rounding of RP value
-    return rp  # optional_round(rp, FitOptions.rounding.final_rp, 1.0)
+    return optional_round(rp, FitOptions.rounding.final_rp, 1.0)
 
 
 # Minimum columns for data:
