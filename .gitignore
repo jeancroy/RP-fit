@@ -5,3 +5,6 @@ __pycache__/
 
 # Project files
 .idea/
+
+# jupyter temp files
+.ipynb_checkpoints/

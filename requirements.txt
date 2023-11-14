@@ -4,6 +4,8 @@ pandas
 scipy
 xxhash
 tabulate
+requests
+ipython
 jupyter
 
 # Plotting
