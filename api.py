@@ -1,7 +1,7 @@
 import pandas as pd
 import scipy
 
-from rp_model.const import get_files_directory, set_files_directory
+from rp_model.const import set_files_directory
 
 set_files_directory("./files")
 
@@ -70,32 +70,29 @@ def run_optimizer(data, x0, unpack_info):
 
 def get_rp_model_result(
     file_dir: str,
-    file_pickle_pattern: str,
+    result_pattern: str,
 ):
     """
     The only method that is being called by the scraper.
 
-    ``file_pickle_pattern`` should contain ``{{hash_id}}`` for the hash ID of the result file.
-    ``rp_model.const.get_files_directory()`` may be utilized for setting the storage location.
+    ``file_pickle_pattern`` should contain ``{hash_id}`` for the hash ID of the result file.
 
-    Example ``file_pickle_pattern``: ``f"{get_files_directory()}/results/test-file-name-{{hash_id}}.pickle"``.
+    Example ``file_pickle_pattern``: ``"results/least-squares-fit-{hash_id}.pickle"``.
 
     :param file_dir: The directory that stores all data files.
-    :param file_pickle_pattern: The path pattern to the result pickle file.
+    :param result_pattern: The path pattern to the result pickle file.
     :return: The resulting ``pd.DataFrame``.
     """
     set_files_directory(file_dir)
 
-    FitOptions.result_file_pattern = file_pickle_pattern
+    FitOptions.result_file_pattern = result_pattern
 
     sol = update_fit_cached()
     table(sol)
 
 
 def main():
-    FitOptions.result_file_pattern = (
-        f"{get_files_directory()}/results/least-squares-fit-{{hash_id}}.pickle"
-    )
+    FitOptions.result_file_pattern = "results/least-squares-fit-{hash_id}.pickle"
     FitOptions.rp_file_id = "1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs"
 
     sol = update_fit_cached()

@@ -1,4 +1,4 @@
-from os import path
+import os.path
 from types import SimpleNamespace
 
 from rp_model.const import get_files_directory
@@ -7,11 +7,11 @@ from rp_model.utils import RoundApprox, soft_round_options
 
 class FitOptions:
     data_file = f"{get_files_directory()}/data/rp-data.pickle"
-    result_file_pattern = f"{get_files_directory()}/results/least-squares-fit-{{hash_id}}.pickle"
+    result_file_pattern = "results/least-squares-fit-{hash_id}.pickle"
 
     @classmethod
     def get_result_file(cls, hash_id):
-        return cls.result_file_pattern.replace("{hash_id}", hash_id)
+        return os.path.join(get_files_directory(), cls.result_file_pattern.replace('{hash_id}', hash_id))
 
     rp_file_id = "1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs"
 
