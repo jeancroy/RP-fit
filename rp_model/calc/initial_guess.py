@@ -1,5 +1,5 @@
-from model.game import game
-from utils.variables import RangeInfo
+from rp_model.calc import game
+from rp_model.utils import RangeInfo
 
 import numpy as np
 
@@ -51,4 +51,4 @@ def make_initial_guess():
         initial_guess[record["Subskill"]] = record["RP Bonus Estimate"]
         range_info[record["Subskill"]] = RangeInfo(0.05, 0.30)
 
-    return (initial_guess, range_info)
+    return initial_guess, range_info

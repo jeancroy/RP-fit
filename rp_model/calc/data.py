@@ -1,21 +1,26 @@
 import pandas as pd
-from utils.files import download_sheet
-from model.game import game
-from model.fit_options import fit_options
+
+from rp_model.utils import download_sheet
+from .fit_options import FitOptions
+from .game import game
 
 
 # %%
 def download_data():
-    data_1_9 = download_sheet(fit_options.rp_file_id, fit_options.rp_sheet_ids["data_1_9"])
-    data_10_49 = download_sheet(fit_options.rp_file_id, fit_options.rp_sheet_ids["data_10_49"])
-    data_50_74 = download_sheet(fit_options.rp_file_id, fit_options.rp_sheet_ids["data_50_74"])
+    data_1_9 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_1_9"])
+    data_10_49 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_10_49"])
+    data_50_74 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_50_74"])
 
     df = pd.concat([data_1_9, data_10_49, data_50_74], axis=0)
     df.dropna(subset=["Pokemon", "Level", "RP", "Nature", "MS lvl"], inplace=True)
-    df.fillna({'Amnt': 0, 'Ing2P': 0, 'Help skill bonus': 1, 'RP Multiplier': 1, 'ModelRP': -1, 'Difference': -1},
-              inplace=True)
-    df.fillna({'Sub Skill 1': '', 'Sub Skill 2': '', 'Sub Skill 3': '', 'Ingredient 2': '', 'Source': ''},
-              inplace=True)
+    df.fillna(
+        {'Amnt': 0, 'Ing2P': 0, 'Help skill bonus': 1, 'RP Multiplier': 1, 'ModelRP': -1, 'Difference': -1},
+        inplace=True
+    )
+    df.fillna(
+        {'Sub Skill 1': '', 'Sub Skill 2': '', 'Sub Skill 3': '', 'Ingredient 2': '', 'Source': ''},
+        inplace=True
+    )
 
     # data above 30 requires a 2nd ingredient to be valid.
     df.drop(df.index[(df["Level"] >= 30) & (df["Amnt"] == 0.0)], inplace=True)
@@ -44,7 +49,7 @@ def download_data():
 
 
 def refresh_pokedex():
-    pokedex = download_sheet(fit_options.rp_file_id, fit_options.rp_sheet_ids["pokedex"])
+    pokedex = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["pokedex"])
 
     pokedex = pokedex.fillna(0)
     pokedex.to_pickle(game.data_files.pokedex)

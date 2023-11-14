@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import numbers
-from copy import copy, deepcopy
+from copy import copy
 from collections import namedtuple
 
 PackInfo = namedtuple("PackInfo", "type start size metadata rescale")
@@ -34,7 +34,7 @@ def pack(source, range_info_dict=None, append_to=None, frozen_keys=None):
 
         # Frozen keys are not packed in the output vector
         # But they will be copied as is to the unpacked dict
-        if (key in frozen_keys or isinstance(value, str)):
+        if key in frozen_keys or isinstance(value, str):
             unpack_info[key] = PackInfo(type(value), None, None, copy(value), None)
 
         elif isinstance(value, (int, float, complex)):
@@ -61,7 +61,7 @@ def pack(source, range_info_dict=None, append_to=None, frozen_keys=None):
         elif isinstance(value, (list, tuple)):
 
             # Empty list or non-numeric treated the same as frozen
-            if (len(value) == 0 or not isinstance(value[0], numbers.Number)):
+            if len(value) == 0 or not isinstance(value[0], numbers.Number):
                 unpack_info[key] = PackInfo(type(value), None, None, copy(value), None)
 
             else:
@@ -84,25 +84,25 @@ def unpack(x, unpack_info):
         type_info, start, size, metadata, scale_info = v
         value = unpack_rescale(x, start, size, scale_info)
 
-        if (start is None):
+        if start is None:
             unpacked[k] = metadata
 
-        elif (type_info in (int, float, complex, numbers.Number)):
+        elif type_info in (int, float, complex, numbers.Number):
             unpacked[k] = value
 
-        elif (type_info is np.ndarray):
+        elif type_info is np.ndarray:
             unpacked[k] = np.array(value).reshape(metadata)
 
-        elif (type_info is pd.Series):
+        elif type_info is pd.Series:
             unpacked[k] = pd.Series(data=value, index=metadata)
 
-        elif (type_info is list):
+        elif type_info is list:
             unpacked[k] = list(value)
 
-        elif (type_info is tuple):
+        elif type_info is tuple:
             unpacked[k] = tuple(value)
 
-        elif (type_info is dict):
+        elif type_info is dict:
             unpacked[k] = unpack(x, metadata)
 
     return unpacked
@@ -110,22 +110,22 @@ def unpack(x, unpack_info):
 
 def pack_rescale(value, key, range_info_dict):
     if range_info_dict is None or key not in range_info_dict:
-        return (value, None)
+        return value, None
 
     range_info = range_info_dict[key]
 
-    if (range_info is None):
-        return (value, None)
+    if range_info is None:
+        return value, None
 
     low, high = range_info
     offset = (high + low) * 0.5
     scale = np.abs(high - low) * 0.5
-    rescaled = (value - offset) / (scale)
-    return (rescaled, ScaleInfo(offset, scale))
+    rescaled = (value - offset) / scale
+    return rescaled, ScaleInfo(offset, scale)
 
 
 def unpack_rescale(x, start, size, scale_info):
-    if (start is None):
+    if start is None:
         return None
 
     value = x[start] if (size is None or size < 2) else x[start: start + size]
@@ -139,13 +139,13 @@ def unpack_rescale(x, start, size, scale_info):
 
 def simplify_opt_result(opt):
     # remove some stuff we don't need to save.
-    if 'jac' in opt:
+    if "jac" in opt:
         del opt.jac
-    if 'active_mask' in opt:
+    if "active_mask" in opt:
         del opt.active_mask
-    if 'fun' in opt:
+    if "fun" in opt:
         del opt.fun
-    if 'final_simplex' in opt:
+    if "final_simplex" in opt:
         del opt.final_simplex
 
     return opt

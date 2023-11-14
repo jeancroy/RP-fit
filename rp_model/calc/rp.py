@@ -1,14 +1,12 @@
-import numpy as np
 from types import SimpleNamespace
 
-from model.game import game
-from utils.variables import unpack
-from utils.rounding import optional_floor, optional_round, floor
-from model.fit_options import fit_options
-from utils.hash import digest
+import numpy as np
+
+from rp_model.calc import FitOptions, game
+from rp_model.utils import floor, optional_floor, unpack
 
 
-class RPModelData():
+class RPModelData:
     def __init__(self, data, computed, variables):
         self.data = data
         self.computed = computed
@@ -41,7 +39,7 @@ def ing_growth(model):
     a = model.vars["Ing Growth Poly"]
     x = model.data["Level"].to_numpy()
     g = ((a[0] * x) + a[1]) * x + a[2]
-    return (1.0 + g)
+    return 1.0 + g
 
 
 def ber_amount(model):
@@ -124,22 +122,20 @@ def bonus_subskill(model):
 
 
 def compute_rp(variables, data, computed, unpack_info):
-
-    if (computed is None):
+    if computed is None:
         computed = make_precomputed_columns(data)
 
     unpacked = unpack(variables, unpack_info)
     m = RPModelData(data, computed, unpacked)
 
-    #print("variables", digest(variables))
-    #print("unpacked", digest(unpacked))
-    #print("model", digest(m))
+    # print("variables", digest(variables))
+    # print("unpacked", digest(unpacked))
+    # print("calc", digest(m))
 
-
-#     return compute_rp_from_model(model)
-#
-#
-# def compute_rp_from_model(m):
+    #     return compute_rp_from_model(calc)
+    #
+    #
+    # def compute_rp_from_model(m):
 
     ing = ing_fraction(m) * ing_modifier(m)
 
@@ -153,18 +149,18 @@ def compute_rp(variables, data, computed, unpack_info):
 
     # Optional flooring of the three main components in RP.
     # (This does not seem to improve the guess, maybe they are multiplied by help count then floored ?)
-    ingredients_value = optional_floor(ingredients_value, fit_options.rounding.components, 0.01)
-    berries_value = optional_floor(berries_value, fit_options.rounding.components, 0.01)
-    main_skill_value = optional_floor(main_skill_value, fit_options.rounding.components, 0.01)
+    ingredients_value = optional_floor(ingredients_value, FitOptions.rounding.components, 0.01)
+    berries_value = optional_floor(berries_value, FitOptions.rounding.components, 0.01)
+    main_skill_value = optional_floor(main_skill_value, FitOptions.rounding.components, 0.01)
 
     # Optional flooring of the bonus together with energy
-    rounded_bonus = optional_floor(bonus * energy_correction, fit_options.rounding.bonus, 0.01)
+    rounded_bonus = optional_floor(bonus * energy_correction, FitOptions.rounding.bonus, 0.01)
 
     # core rp formula
     rp = rounded_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
 
     # Optional final rounding of RP value
-    return rp #optional_round(rp, fit_options.rounding.final_rp, 1.0)
+    return rp  # optional_round(rp, FitOptions.rounding.final_rp, 1.0)
 
 
 # Minimum columns for data:
@@ -185,8 +181,6 @@ def compute_rp(variables, data, computed, unpack_info):
 # Ing1P
 # Berry1
 # BerryL
-
-
 def make_precomputed_columns(data):
     computed = SimpleNamespace()
 
@@ -220,12 +214,17 @@ def make_precomputed_columns(data):
     subs = subskills["Subskill"].unique()
 
     computed.has_subskill = \
-        dict([(s, (
+        dict([
+            (
+                s,
+                (
                     ((data["Sub Skill 1"].str.lower() == s.lower()) & (data["Level"] >= 10)) |
                     ((data["Sub Skill 2"].str.lower() == s.lower()) & (data["Level"] >= 25)) |
                     ((data["Sub Skill 3"].str.lower() == s.lower()) & (data["Level"] >= 50))
-        ).astype(int).to_numpy()
-               ) for s in subs])
+                ).astype(int).to_numpy()
+            )
+            for s in subs
+        ])
 
     # Food
     # We could redo that work, but it's not related to the optimization
@@ -257,7 +256,7 @@ def make_precomputed_columns(data):
 
     # We are not sure if we need to floor the time period
     final_period = optional_floor(
-        final_period, fit_options.rounding.period, 0.01)
+        final_period, FitOptions.rounding.period, 0.01)
 
     # But we are almost certain we need to floor the help per hour
     computed.helps_per_hour = floor(3600 / final_period, 0.01)

@@ -1,9 +1,11 @@
-import pandas as pd
-import numpy as np
-
-import xxhash
-import numbers
 import datetime
+import numbers
+
+import numpy as np
+import pandas as pd
+import xxhash
+
+from .display import list_members
 
 
 def digest(*argv):
@@ -21,7 +23,6 @@ def digest(*argv):
 def _update_hash(val, update):
     # always update by the type, then by the value.
     # this is to differentiate empty string, empty list, None, 0, False etc.
-
     update(bytes(str(type(val)), "utf8"))
 
     if isinstance(val, str):
@@ -38,18 +39,16 @@ def _update_hash(val, update):
         return
 
     if val is None:
-        update(b'')
+        update(b"")
 
     if isinstance(val, pd.Series):
         # Convert to numpy then do the numpy logic
         val = val.to_numpy()
 
     if isinstance(val, (np.ndarray, np.generic)):
-
         # If we have a uniform basic type, get bytes from numpy, otherwise recurse. 
         # Uses .item() to convert from a numpy object to python
-
-        if val.dtype is not np.dtype('O'):
+        if val.dtype is not np.dtype("O"):
             update(val.data.tobytes())
         else:
             for x in val:
@@ -62,9 +61,7 @@ def _update_hash(val, update):
         return
 
     if isinstance(val, (list, set, tuple)):
-
-        # If we have a uniform basic type, get bytes from numpy, otherwise recurse. 
-
+        # If we have a uniform basic type, get bytes from numpy, otherwise recurse.
         try:
             arr = np.array(val)
             if arr.dtype is not np.dtype('O'):
@@ -78,13 +75,11 @@ def _update_hash(val, update):
             for x in val:
                 _update_hash(x, update)
             return
-
     else:
-
-        members = sorted(_list_members(val))
+        members = sorted(list_members(val))
 
         # for objects and dict, we list (members, values) and hash those
-        if (len(members) > 0):
+        if len(members) > 0:
             for x in members:
                 _update_hash(x[0], update)
                 _update_hash(x[1], update)
@@ -93,12 +88,3 @@ def _update_hash(val, update):
             # if properties are not iterables, use string representation
             update(bytes(str(val), "utf8"))
             return
-
-
-def _list_members(obj):
-    if isinstance(obj, dict):
-        return list(obj.items())
-
-    return ([(a, getattr(obj, a))
-             for a in dir(obj) if not a.startswith('_') and not callable(getattr(obj, a))
-             ])

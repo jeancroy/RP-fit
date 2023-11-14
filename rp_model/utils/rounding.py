@@ -52,9 +52,8 @@ def optional_round(value, approx_option, resolution=1.0):
 # alpha = 0 gives f(x) = x, then goes closer f(x) = round(x) as alpha goes to inf.
 #
 # Setting alpha instead of gamma is mostly a convenience for linear progression of effect.
-
 def soft_round(t, alpha=None):
-    if (alpha is None):
+    if alpha is None:
         alpha = soft_round_options.alpha
 
     if alpha <= 0.0:
@@ -74,16 +73,14 @@ def soft_round(t, alpha=None):
 # The option int_bias shifts the data to give better behavior at integer positions.
 # That offset corrects itself as alpha goes to inf, but at a slower pace than sr(x) goes to round(x),
 # So the overall effect is that we converge to soft_floor(integer,int_bias=True) == integer.
-
 def soft_floor(t, alpha=None, int_bias=None):
-    if (alpha is None):
-
-        if (soft_round_options.alpha is None):
+    if alpha is None:
+        if soft_round_options.alpha is None:
             return np.floor(t)
 
         alpha = soft_round_options.alpha
 
-    if (int_bias is None):
+    if int_bias is None:
         int_bias = soft_round_options.use_integer_bias
 
     if not int_bias:
@@ -93,10 +90,10 @@ def soft_floor(t, alpha=None, int_bias=None):
 
 
 def progressive_soft_round_loop(x0, optim_func, alpha_progression=None):
-    if (not soft_round_options.use_progressive_alpha):
+    if not soft_round_options.use_progressive_alpha:
         return optim_func(x0)
 
-    if (alpha_progression is None):
+    if alpha_progression is None:
         alpha_progression = soft_round_options.alpha_progression
 
     x = x0

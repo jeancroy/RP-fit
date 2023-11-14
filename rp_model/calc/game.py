@@ -1,13 +1,11 @@
-import pandas as pd
 from types import SimpleNamespace
-from os import path
+
+import pandas as pd
+
+from rp_model.const import get_files_directory
 
 
-def path_from_this_file(p):
-    return path.join(path.dirname(__file__), p)
-
-
-class GameData():
+class GameData:
     natures = SimpleNamespace(
         soh_effect=0.1,
         ing_effect=0.2,
@@ -25,16 +23,15 @@ class GameData():
     )
 
     data_files = SimpleNamespace(
-        natures=path_from_this_file('../data/natures.pickle'),
-        subskills=path_from_this_file('../data/subskills.pickle'),
-        mainskills=path_from_this_file('../data/mainskills.pickle'),
-        pokedex=path_from_this_file('../data/pokedex.pickle'),
+        natures=f"{get_files_directory()}/data/natures.pickle",
+        subskills=f"{get_files_directory()}/data/subskills.pickle",
+        mainskills=f"{get_files_directory()}/data/mainskills.pickle",
+        pokedex=f"{get_files_directory()}/data/pokedex.pickle",
     )
 
-    data = SimpleNamespace(),
+    data = SimpleNamespace()
 
     def refresh_loaded_data(self):
-
         # read all the data files here
         self.data = SimpleNamespace(
             **dict([(k, pd.read_pickle(v)) for k, v in vars(self.data_files).items()])
