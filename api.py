@@ -1,14 +1,10 @@
 import pandas as pd
 import scipy
 
-from .rp_model.const import set_files_directory
-
-set_files_directory("./files")
-
-from .rp_model.calc import (  # noqa: E402
-    compute_rp, download_data, FitOptions, game, make_initial_guess, make_precomputed_columns, refresh_pokedex,
+from .rp_model.calc import (
+    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_pokedex,
 )
-from .rp_model.utils import digest, pack, save, simplify_opt_result, try_load, unpack, table  # noqa: E402
+from .rp_model.utils import digest, pack, save, simplify_opt_result, table, try_load, unpack
 
 
 def update_fit_cached():
@@ -68,23 +64,17 @@ def run_optimizer(data, x0, unpack_info):
     return opt
 
 
-def get_rp_model_result(
-    file_dir: str,
-    result_pattern: str,
-):
+def get_rp_model_result(result_pattern: str):
     """
-    The only method that is being called by the scraper.
+    The only method that is called by the scraper.
 
     ``file_pickle_pattern`` should contain ``{hash_id}`` for the hash ID of the result file.
 
     Example ``file_pickle_pattern``: ``"results/least-squares-fit-{hash_id}.pickle"``.
 
-    :param file_dir: The directory that stores all data files.
     :param result_pattern: The path pattern to the result pickle file.
     :return: The resulting ``pd.DataFrame``.
     """
-    set_files_directory(file_dir)
-
     FitOptions.result_file_pattern = result_pattern
 
     sol = update_fit_cached()
