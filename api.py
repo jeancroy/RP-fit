@@ -79,8 +79,7 @@ def get_rp_model_result(result_pattern: str):
     """
     FitOptions.result_file_pattern = result_pattern
 
-    sol = update_fit_cached()
-    table(sol)
+    return update_fit_cached()
 
 
 def main():
