@@ -1,0 +1,19 @@
+# Data Science + Processing
+numpy
+pandas
+scipy
+xxhash
+tabulate
+requests
+ipython
+jupyter
+
+# Plotting
+matplotlib
+seaborn
+
+# Others
+cmaes
+DFO-LS
+pypop7
+tqdm
