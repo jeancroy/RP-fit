@@ -22,7 +22,6 @@ ScaleInfo = namedtuple("ScaleInfo", "offset scale")
 # normalized to be in the [-1, 1] range most of the time.
 
 def pack(source, range_info_dict=None, append_to=None, frozen_keys=None):
-
     if frozen_keys is None:
         frozen_keys = []
 
@@ -115,7 +114,7 @@ def pack_rescale(value, key, range_info_dict):
 
     range_info = range_info_dict[key]
 
-    if(range_info is None):
+    if (range_info is None):
         return (value, None)
 
     low, high = range_info
@@ -136,6 +135,20 @@ def unpack_rescale(x, start, size, scale_info):
 
     offset, scale = scale_info
     return value * scale + offset
+
+
+def simplify_opt_result(opt):
+    # remove some stuff we don't need to save.
+    if 'jac' in opt:
+        del opt.jac
+    if 'active_mask' in opt:
+        del opt.active_mask
+    if 'fun' in opt:
+        del opt.fun
+    if 'final_simplex' in opt:
+        del opt.final_simplex
+
+    return opt
 
 
 def lookup_table(serie1, table2, table2_lookup_column, table2_return_column):

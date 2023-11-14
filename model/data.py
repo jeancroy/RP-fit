@@ -39,5 +39,12 @@ def download_data():
 
 
 def refresh_pokedex():
-    pass
+
+    pokedex = download_sheet(fit_options.rp_file_id, fit_options.rp_sheet_ids["pokedex"])
+
+    pokedex = pokedex.fillna(0)
+    pokedex.to_pickle(game.data_files.pokedex)
+    game.refresh_loaded_data()
+
+
 

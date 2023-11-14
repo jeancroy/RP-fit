@@ -1,73 +1,49 @@
 from model.fit_options import fit_options
-from model.data import download_data, refresh_pokedex
 from model.initial_guess import make_initial_guess
+from model.rp import compute_rp, make_precomputed_columns
+from model.data import download_data, refresh_pokedex
 
 from utils.options import merge_dict_like
-from utils.files import load, save, isfile
+from utils.files import save, try_load
+from utils.variables import pack, unpack, simplify_opt_result
 from utils.hash import digest
-from utils.variables import pack
 
+import scipy
 import os.path as path
-from ipynb_convert import ipynb_to_py
 
 
-# This is a work in progress
-# The idea is to be able to launch the fit without jupyter
-# and store result at an arbitrary location
+def launch_fit(options=None):
+    merge_dict_like(fit_options, options)
 
-class FitResultStorage:
-
-    def __init__(self, options):
-        self.get_fit_location = options.get_result_file
-
-    # Read from the final storage location
-    def try_get(self, hashid):
-        location = self.get_fit_location(hashid)
-        return None if not isfile(location) else load(location)
-
-    # Write to final storage location
-    def put(self, hashid, data):
-        save(self.get_fit_location(hashid), data)
-
-    # We get return value from the script as a file.
-    def get_script_output(self, hashid):
-        location = self.get_fit_location(hashid)
-        return None if not isfile(location) else load(location)
-
-
-def launch_fit(fit_storage=None, options=None):
-    opt = merge_dict_like(fit_options, options)
-
-    if (fit_storage is None):
-        fit_storage = FitResultStorage(opt)
-
-    refresh_pokedex()  # todo
+    refresh_pokedex()
     data = download_data()
     x0, unpack_info = pack(*make_initial_guess())
+
     hashid = digest(data, x0)
+    filepath = fit_options.get_result_file(hashid)
+    opt = try_load(filepath)
 
-    fit = fit_storage.try_get(hashid)
-
-    if (fit is None):
-
-        launch_fit_as_script()
-        fit = fit_storage.get_script_output(hashid)
-        fit_storage.put(hashid, fit)
-
-        # in our sample api usage,
-        # merging the settings does most of the heavy lifting.
-
+    if (opt is None):
+        opt = run_optimizer(data, x0, unpack_info)
+        save(filepath, simplify_opt_result(opt))
 
     else:
         print("Loaded from cache")
 
-    return fit
+    solution = unpack(opt.x, unpack_info)
+    return solution
 
 
-def launch_fit_as_script():
-    # This seems to be the recommended way to run another script??
-    import converted.rp_fit
-    pass
+def run_optimizer(data, x0, unpack_info):
+    computed = make_precomputed_columns(data)
+    reference_rp = data["RP"].to_numpy()
+
+    def residual(x):
+        return reference_rp - compute_rp(x, data, computed, unpack_info)
+
+    opt = scipy.optimize.least_squares(residual, x0, **fit_options.least_squares_kwargs)
+
+    return opt
 
 
 def path_from_this_file(p):
@@ -75,18 +51,15 @@ def path_from_this_file(p):
 
 
 def main():
-    ipynb_to_py("RP fit.ipynb", "converted/rp_fit.py")
+    from utils.display import table
 
     overwrites = dict(
-        result_file_pattern=path_from_this_file("./converted/saves/some-filename-{hash_id}.pickle"),
+        result_file_pattern=path_from_this_file("./test/alternative-save-location/some-filename-{hash_id}.pickle"),
         rp_file_id="1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs",
-        rp_sheet_ids=({
-            "data_1_9": "1682088244",
-            "data_10_49": "1691041080",
-        }),
     )
 
-    launch_fit(options=overwrites)
+    sol = launch_fit(options=overwrites)
+    table(sol)
 
 
 if __name__ == "__main__":

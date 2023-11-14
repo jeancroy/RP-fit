@@ -29,6 +29,10 @@ def isfile(filepath):
     return os.path.isfile(filepath)
 
 
+def try_load(filepath):
+    return None if not isfile(filepath) else load(filepath)
+
+
 def last_modified_file_with_pattern(search_path, pattern_str):
     pattern = re.compile(pattern_str)
     files = filter(os.path.isfile, os.listdir(search_path))

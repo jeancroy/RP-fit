@@ -10,10 +10,12 @@ import sys
 # Display anything as a table
 def table(data, **kwargs):
 
-    tablefmt = 'html' if in_notebook() else 'plain'
-
     if (isinstance(data, (list, pd.Series, pd.DataFrame, pd.Index))):
-        display(tabulate(data, tablefmt=tablefmt, **kwargs))
+
+        if in_notebook():
+            display(tabulate(data, tablefmt='html', **kwargs))
+        else:
+            print(tabulate(data, tablefmt='plain', **kwargs))
 
     else:
         table([

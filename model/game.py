@@ -33,11 +33,7 @@ class GameData():
 
     data = SimpleNamespace(),
 
-    def __int__(self):
-        #self.refresh()
-        pass
-
-    def refresh(self):
+    def refresh_loaded_data(self):
 
         # read all the data files here
         self.data = SimpleNamespace(
@@ -51,4 +47,4 @@ class GameData():
 
 # Main export
 game = GameData()
-game.refresh()
+game.refresh_loaded_data()
