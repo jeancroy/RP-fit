@@ -2,6 +2,7 @@ from model.fit_options import fit_options
 from model.initial_guess import make_initial_guess
 from model.rp import compute_rp, make_precomputed_columns
 from model.data import download_data, refresh_pokedex
+from model.game import game
 
 from utils.options import merge_dict_like
 from utils.files import save, try_load
@@ -10,9 +11,10 @@ from utils.hash import digest
 
 import scipy
 import os.path as path
+import pandas as pd
 
 
-def launch_fit(options=None):
+def update_fit_cached(options=None):
     merge_dict_like(fit_options, options)
 
     refresh_pokedex()
@@ -30,8 +32,31 @@ def launch_fit(options=None):
     else:
         print("Loaded from cache")
 
-    solution = unpack(opt.x, unpack_info)
-    return solution
+    sol = unpack(opt.x, unpack_info)
+
+    result = pd.DataFrame({
+
+        "pokemon": game.data.pokedex["Pokemon"],
+        "pokemonId": game.data.pokedex["Pokemon ID"],
+        "ingredientSplit": sol["Pokemons ing fractions"],
+        "skillValue": sol["Pokemons skill products"]
+
+        # todo
+        # confidence: A python dict with the keys of ingredient and skill. Sample value: 0.1022 (conf (xxx)*) in the bootstrap one
+        # skillPercent: Only needed if there's a field for the model to consume skill value and calculate skill %. Sample value: 6.512
+
+    })
+
+    # Merge with result count
+
+    result = result.set_index("pokemon")
+    result['dataCount'] = data.groupby(['Pokemon']).size()
+
+    # If there's no count, Panda uses NaN, and therefore casts everything to double.
+    # So we now undo that.
+    result['dataCount'] = result['dataCount'].fillna(0).astype(int)
+
+    return result
 
 
 def run_optimizer(data, x0, unpack_info):
@@ -58,7 +83,7 @@ def main():
         rp_file_id="1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs",
     )
 
-    sol = launch_fit(options=overwrites)
+    sol = update_fit_cached(options=overwrites)
     table(sol)
 
 
