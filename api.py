@@ -1,6 +1,8 @@
 import pandas as pd
 import scipy
 
+from .rp_model.files import from_files_directory
+
 from .rp_model.calc import (
     FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_pokedex,
 )
@@ -23,8 +25,7 @@ def update_fit_cached():
 
         print(f"RP model pickle hash mismatch, generating new file...")
         opt = run_optimizer(data, x0, unpack_info)
-        store.use_data(opt) \
-             .save_to(FitOptions.result_file)
+        store.use_data(opt).save_to(FitOptions.result_file)
 
     else:
         opt = store.data()
@@ -70,21 +71,17 @@ def run_optimizer(data, x0, unpack_info):
     return simplify_opt_result(opt)
 
 
-def get_rp_model_result(result_pattern: str):
+def get_rp_model_result(result_file: str):
     """
     The only method that is called by the scraper.
 
-    ``file_pickle_pattern`` should contain ``{hash_id}`` for the hash ID of the result file.
+    Example ``file_pickle_pattern``: ``"results/least-squares-fit.pickle"``.
 
-    Example ``file_pickle_pattern``: ``"results/least-squares-fit-{hash_id}.pickle"``.
-
-    :param result_pattern: The path pattern to the result pickle file.
+    :param result_file: The path pattern to the result pickle file.
     :return: The resulting ``pd.DataFrame``.
     """
 
-    # There's temporarily two of these as I test the idea of the store
-    FitOptions.result_file_pattern = result_pattern
-    FitOptions.result_file = result_pattern
+    FitOptions.result_file = from_files_directory(result_file)
 
     return update_fit_cached()
 
