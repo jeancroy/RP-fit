@@ -6,14 +6,19 @@ from ..utils import RoundApprox, soft_round_options
 
 print(f"RP model file path: {get_files_directory()}")
 
+
 class FitOptions:
     data_file = f"{get_files_directory()}/data/rp-data.pickle"
+
+    # There's temporarily two of these as I test the idea of the store
     result_file_pattern = "results/least-squares-fit-{hash_id}.pickle"
 
     @classmethod
     def get_result_file(cls, hash_id):
         return os.path.join(get_files_directory(), cls.result_file_pattern.replace('{hash_id}', hash_id))
 
+    # There's temporarily two of these as I test the idea of the store
+    result_file = f"{get_files_directory()}/results/least-squares-fit.pickle"
     rp_file_id = "1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs"
 
     rp_sheet_ids = {
