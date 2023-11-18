@@ -1,4 +1,3 @@
-import os.path
 from types import SimpleNamespace
 
 from ..files import get_files_directory, from_files_directory
