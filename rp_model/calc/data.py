@@ -54,3 +54,16 @@ def refresh_pokedex():
     pokedex = pokedex.fillna(0)
     pokedex.to_pickle(game.data_files.pokedex)
     game.refresh_loaded_data()
+
+
+def refresh_main_skill():
+    main_skills = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["main_skill"])
+
+    main_skills = main_skills[["Main skill", "Value lvl 1"]]
+    main_skills = main_skills.rename(columns={
+        "Main skill": "Skill",
+        "Value lvl 1": "Value",
+    })
+
+    main_skills.to_pickle(game.data_files.mainskills)
+    game.refresh_loaded_data()

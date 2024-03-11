@@ -1,16 +1,18 @@
 import pandas as pd
 import scipy
 
-from .rp_model.files import from_files_directory
-
 from .rp_model.calc import (
-    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_pokedex,
+    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_main_skill,
+    refresh_pokedex,
 )
-from .rp_model.utils import pack, unpack, simplify_opt_result, table, DataStore
+from .rp_model.files import from_files_directory
+from .rp_model.utils import DataStore, pack, simplify_opt_result, table, unpack
 
 
 def update_fit_cached():
     refresh_pokedex()
+    refresh_main_skill()
+
     data = download_data()
     data.to_pickle(FitOptions.data_file)
 
