@@ -55,18 +55,12 @@ def ing_fraction(model):
     return model.vars["Pokemons ing fractions"][model.computed.ing_positions]
 
 
-def skl_product(model):
-    return model.vars["Pokemons skill products"][model.computed.skl_positions]
+def skl_chance(model):
+    return model.vars["Pokemons skill chances"][model.computed.skl_positions]
 
 
-def skl_growth(model):
-    a = np.array(list(map(lambda x: model.vars[x][0], model.data["MSkill"])))
-    b = np.array(list(map(lambda x: model.vars[x][1], model.data["MSkill"])))
-
-    growth = a * np.exp(b * model.data["MS lvl"].to_numpy())
-    growth[model.data["MS lvl"] == 1] = 1.0
-
-    return growth
+def skl_table(model):
+    return model.computed.skill_value_at_level
 
 
 def ing_modifier(model):
@@ -129,20 +123,11 @@ def compute_rp(variables, data, computed, unpack_info):
     unpacked = unpack(variables, unpack_info)
     m = RPModelData(data, computed, unpacked)
 
-    # print("variables", digest(variables))
-    # print("unpacked", digest(unpacked))
-    # print("calc", digest(m))
-
-    #     return compute_rp_from_model(calc)
-    #
-    #
-    # def compute_rp_from_model(m):
-
     ing = ing_fraction(m) * ing_modifier(m)
 
     ingredients_value = ing * total_ing_value(m)
     berries_value = (1.0 - ing) * ber_amount(m) * ber_value_at_level(m)
-    main_skill_value = skl_product(m) * skl_modifier(m) * skl_growth(m)
+    main_skill_value = skl_modifier(m) * skl_chance(m) * skl_table(m)
 
     help_count = fractional_help_count(m)
     energy_correction = energy_modifier(m)
@@ -182,6 +167,7 @@ def compute_rp(variables, data, computed, unpack_info):
 # Ing1P
 # Berry1
 # BerryL
+# SklVal
 def make_precomputed_columns(data):
     computed = SimpleNamespace()
 
@@ -236,6 +222,9 @@ def make_precomputed_columns(data):
     # Ing2
     computed.ing2_power_base = data["Ing2P"].to_numpy()
     computed.ing2_amount = data["Amnt"].to_numpy()
+
+    # Main skill and level
+    computed.skill_value_at_level = data["SklVal"].to_numpy()
 
     # Here, we will reproduce the Help/hr information as a test of using those one-hot vectors.
     computed.period_base = data["Freq1"].to_numpy()

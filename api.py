@@ -2,7 +2,7 @@ import pandas as pd
 import scipy
 
 from .rp_model.calc import (
-    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_main_skill,
+    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns,
     refresh_pokedex,
 )
 from .rp_model.files import from_files_directory
@@ -11,7 +11,7 @@ from .rp_model.utils import DataStore, pack, simplify_opt_result, table, unpack
 
 def update_fit_cached():
     refresh_pokedex()
-    refresh_main_skill()
+    # refresh_main_skill()
 
     data = download_data()
     data.to_pickle(FitOptions.data_file)
@@ -39,7 +39,7 @@ def update_fit_cached():
         "pokemon": game.data.pokedex["Pokemon"],
         "pokemonId": game.data.pokedex["Pokemon ID"],
         "ingredientSplit": sol["Pokemons ing fractions"],
-        "skillValue": sol["Pokemons skill products"]
+        "skillValue": sol["Pokemons skill chances"]
         # TODO
         # `error`: A python dict with the keys of ingredient and skill. Sample value: 0.1022 (conf (xxx)*) in the
         # bootstrap one
