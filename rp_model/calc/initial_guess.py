@@ -24,7 +24,7 @@ def make_initial_guess():
     initial_guess["Pokemons skill chances"] = np.array(previous_skl_chances)
 
     range_info["Pokemons ing fractions"] = RangeInfo(0.1, 0.3)
-    range_info["Pokemons skill chances"] = RangeInfo(5.0, 70.0)
+    range_info["Pokemons skill chances"] = RangeInfo(0.001, 0.100)
 
     # Initial guess for ingredient growth.
     # Comes from a previous fit
