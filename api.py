@@ -2,28 +2,35 @@ import pandas as pd
 import scipy
 
 from .rp_model.calc import (
-    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_pokedex,
+    FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns, refresh_main_skill,
+    refresh_pokedex,
 )
-from .rp_model.utils import digest, pack, save, simplify_opt_result, table, try_load, unpack
+from .rp_model.files import from_files_directory
+from .rp_model.utils import DataStore, pack, simplify_opt_result, table, unpack
 
 
 def update_fit_cached():
     refresh_pokedex()
+    refresh_main_skill()
+
     data = download_data()
     data.to_pickle(FitOptions.data_file)
 
     x0, unpack_info = pack(*make_initial_guess())
 
-    hashid = digest(data, x0)
-    filepath = FitOptions.get_result_file(hashid)
-    print(f"RP model pickle location (to check): {filepath}")
-    opt = try_load(filepath)
+    store = (DataStore()
+             .with_dependency_on(data, x0)
+             .try_read_and_validate(FitOptions.result_file)
+             )
 
-    if opt is None:
+    if not store.is_valid():
+
         print(f"RP model pickle hash mismatch, generating new file...")
         opt = run_optimizer(data, x0, unpack_info)
-        save(filepath, simplify_opt_result(opt))
+        store.use_data(opt).save_to(FitOptions.result_file)
+
     else:
+        opt = store.data()
         print("RP Model pickle loaded from cache")
 
     sol = unpack(opt.x, unpack_info)
@@ -63,28 +70,25 @@ def run_optimizer(data, x0, unpack_info):
 
     opt = scipy.optimize.least_squares(residual, x0, **FitOptions.least_squares_kwargs)
 
-    return opt
+    return simplify_opt_result(opt)
 
 
-def get_rp_model_result(result_pattern: str):
+def get_rp_model_result(result_file: str):
     """
     The only method that is called by the scraper.
 
-    ``file_pickle_pattern`` should contain ``{hash_id}`` for the hash ID of the result file.
+    Example ``file_pickle_pattern``: ``"results/least-squares-fit.pickle"``.
 
-    Example ``file_pickle_pattern``: ``"results/least-squares-fit-{hash_id}.pickle"``.
-
-    :param result_pattern: The path pattern to the result pickle file.
+    :param result_file: The path pattern to the result pickle file.
     :return: The resulting ``pd.DataFrame``.
     """
-    FitOptions.result_file_pattern = result_pattern
+
+    FitOptions.result_file = from_files_directory(result_file)
 
     return update_fit_cached()
 
 
 def main():
-    FitOptions.result_file_pattern = "results/least-squares-fit-{hash_id}.pickle"
-    FitOptions.rp_file_id = "1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs"
 
     sol = update_fit_cached()
     table(sol)
