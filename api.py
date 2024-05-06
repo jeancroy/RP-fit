@@ -1,5 +1,8 @@
+from dataclasses import dataclass
+
 import pandas as pd
 import scipy
+from pandas import DataFrame
 
 from .rp_model.calc import (
     FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns,
@@ -9,7 +12,13 @@ from .rp_model.files import from_files_directory
 from .rp_model.utils import DataStore, pack, simplify_opt_result, table, unpack
 
 
-def update_fit_cached():
+@dataclass
+class RpModelFitResult:
+    raw_data: DataFrame
+    fit_result: DataFrame
+
+
+def update_fit_cached() -> RpModelFitResult:
     refresh_pokedex()
     # refresh_main_skill()
 
@@ -24,7 +33,6 @@ def update_fit_cached():
              )
 
     if not store.is_valid():
-
         print(f"RP model pickle hash mismatch, generating new file...")
         opt = run_optimizer(data, x0, unpack_info)
         store.use_data(opt).save_to(FitOptions.result_file)
@@ -39,14 +47,7 @@ def update_fit_cached():
         "pokemon": game.data.pokedex["Pokemon"],
         "pokemonId": game.data.pokedex["Pokemon ID"],
         "ingredientSplit": sol["Pokemons ing fractions"],
-        "skillValue": sol["Pokemons skill chances"]
-        # TODO
-        # `error`: A python dict with the keys of ingredient and skill. Sample value: 0.1022 (conf (xxx)*) in the
-        # bootstrap one
-        # `skillPercent`: Only needed if there's a field for the calc to consume skill value and calculate skill %.
-        # Sample value: 6.512
-        # > `skillPercent` can be skipped if the model doesn't take anything else or do computations.
-        # > The scraper can handle it with single value of "skill value"
+        "skillValue": sol["Pokemons skill chances"],
     })
 
     # Merge with result count
@@ -58,7 +59,7 @@ def update_fit_cached():
     # So we now undo that.
     result["dataCount"] = result["dataCount"].fillna(0).astype(int)
 
-    return result
+    return RpModelFitResult(raw_data=data, fit_result=result)
 
 
 def run_optimizer(data, x0, unpack_info):
@@ -73,7 +74,7 @@ def run_optimizer(data, x0, unpack_info):
     return simplify_opt_result(opt)
 
 
-def get_rp_model_result(result_file: str):
+def get_rp_model_result(result_file: str) -> RpModelFitResult:
     """
     The only method that is called by the scraper.
 
@@ -89,8 +90,7 @@ def get_rp_model_result(result_file: str):
 
 
 def main():
-
-    sol = update_fit_cached()
+    sol = update_fit_cached().fit_result
     table(sol)
 
 
