@@ -11,9 +11,8 @@ jupyter
 # Plotting
 matplotlib
 seaborn
-
-# Others
-cmaes
-DFO-LS
-pypop7
 tqdm
+
+# Optimizers
+DFO-LS
+

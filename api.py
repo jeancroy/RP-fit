@@ -1,15 +1,15 @@
-from dataclasses import dataclass
-
-import pandas as pd
 import scipy
+import pandas as pd
 from pandas import DataFrame
+from dataclasses import dataclass
+from dfols import solve as dfols_solve
 
 from .rp_model.calc import (
     FitOptions, compute_rp, download_data, game, make_initial_guess, make_precomputed_columns,
     refresh_pokedex,
 )
 from .rp_model.files import from_files_directory
-from .rp_model.utils import DataStore, pack, simplify_opt_result, table, unpack
+from .rp_model.utils import DataStore, pack, table, unpack
 
 
 @dataclass
@@ -27,15 +27,15 @@ def update_fit_cached() -> RpModelFitResult:
 
     x0, unpack_info = pack(*make_initial_guess())
 
-    store = (DataStore()
+    store = (DataStore(FitOptions.result_file)
              .with_dependency_on(data, x0)
-             .try_read_and_validate(FitOptions.result_file)
+             .try_read_and_validate()
              )
 
     if not store.is_valid():
         print(f"RP model pickle hash mismatch, generating new file...")
         opt = run_optimizer(data, x0, unpack_info)
-        store.use_data(opt).save_to(FitOptions.result_file)
+        store.use_data(opt).save_to_path()
 
     else:
         opt = store.data()
@@ -69,9 +69,9 @@ def run_optimizer(data, x0, unpack_info):
     def residual(x):
         return reference_rp - compute_rp(x, data, computed, unpack_info)
 
-    opt = scipy.optimize.least_squares(residual, x0, **FitOptions.least_squares_kwargs)
+    opt = dfols_solve(residual, x0, print_progress=True, maxfun=1500, rhoend=1.1e-4)
 
-    return simplify_opt_result(opt)
+    return opt
 
 
 def get_rp_model_result(result_file: str) -> RpModelFitResult:

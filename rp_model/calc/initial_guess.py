@@ -15,6 +15,9 @@ def make_initial_guess():
     previous_ing_fractions = []
     previous_skl_chances = []
 
+    # todo (?) use only some row from pokedex (say to refine a single mon)
+    # todo (?) alternative design is array subset when packing.
+
     for record in game.data.pokedex.to_dict(orient='records'):
         # Last fit
         previous_ing_fractions.append(record["Last fit ing"])
@@ -30,16 +33,16 @@ def make_initial_guess():
     # Comes from a previous fit
     # Numpy poly convention is the highest degree first
 
-    initial_guess["Ing Growth Poly"] = np.array([0.00018848, 0.00314556, 0.0033453])
-    range_info["Ing Growth Poly"] = RangeInfo(-0.005, 0.005)
+    # initial_guess["Ing Growth Poly"] = np.array([0.00018848, 0.00314556, 0.0033453])
+    # range_info["Ing Growth Poly"] = RangeInfo(-0.005, 0.005)
 
     # Add our guess for the subskills that multiply the whole rp
 
-    subskills = game.data.subskills
-    bonus = subskills[subskills["Subskill"].isin(game.subskills.bonus_names)]
-
-    for record in bonus.to_dict(orient='records'):
-        initial_guess[record["Subskill"]] = record["RP Bonus Estimate"]
-        range_info[record["Subskill"]] = RangeInfo(0.05, 0.30)
+    # subskills = game.data.subskills
+    # bonus = subskills[subskills["Subskill"].isin(game.subskills.bonus_names)]
+    #
+    # for record in bonus.to_dict(orient='records'):
+    #     initial_guess[record["Subskill"]] = record["RP Bonus Estimate"]
+    #     range_info[record["Subskill"]] = RangeInfo(0.05, 0.30)
 
     return initial_guess, range_info

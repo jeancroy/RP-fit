@@ -1,9 +1,8 @@
 from types import SimpleNamespace
 
 from ..files import get_files_directory, from_files_directory
-from ..utils import RoundApprox, soft_round_options
 
-print(f"RP model file path: {get_files_directory()}")
+# print(f"RP model file path: {get_files_directory()}")
 
 
 class FitOptions:
@@ -23,11 +22,3 @@ class FitOptions:
 
     least_squares_kwargs = dict(loss="huber", xtol=None, verbose=2, max_nfev=200, f_scale=10)
 
-    rounding = SimpleNamespace(
-        bonus=RoundApprox.Exact,
-        period=RoundApprox.Pass,
-        components=RoundApprox.Pass,
-        final_rp=RoundApprox.Pass,
-    )
-
-    soft_round = soft_round_options
