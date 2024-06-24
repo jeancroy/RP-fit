@@ -2,9 +2,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from .fit_options import FitOptions
 from .game import game
-from ..utils import floor, optional_floor, optional_round, unpack
+from ..utils import unpack, truncate, lookup_table
 
 
 class RPModelData:
@@ -14,7 +13,43 @@ class RPModelData:
         self.vars = variables
 
 
-def total_ing_value(model):
+def compute_rp_components(variables, data, computed, unpack_info):
+    if computed is None:
+        computed = make_precomputed_columns(data)
+
+    unpacked = unpack(variables, unpack_info)
+    m = RPModelData(data, computed, unpacked)
+
+    skill_ratio = truncate(skl_chance(m) * skl_modifier(m), 4)
+    ingredient_ratio = truncate(ing_fraction(m) * ing_modifier(m), 4)
+    berry_ratio = (1.0 - ingredient_ratio)
+
+    help_count = fractional_help_count(m)
+    ingredients_value = truncate(help_count * ingredient_ratio * final_ingredients_value(m), 2)
+    berries_value = truncate(help_count * berry_ratio * final_berries_value(m), 2)
+    main_skill_value = truncate(help_count * skill_ratio * skill_value(m), 2)
+
+    # Optional flooring of the bonus together with energy
+    bonus_multipliers = truncate(bonus_subskill(m) * energy_modifier(m), 2)
+
+    # Put items together.
+    rp = np.round(bonus_multipliers * (ingredients_value + berries_value + main_skill_value))
+
+    return dict({
+        "rp_model": rp,
+        "ingredients_value_model": ingredients_value,
+        "berries_value_model": berries_value,
+        "main_skill_value_model": main_skill_value,
+        "bonus_multipliers_model": bonus_multipliers,
+    })
+
+
+def compute_rp(variables, data, computed, unpack_info):
+    results = compute_rp_components(variables, data, computed, unpack_info)
+    return results["rp_model"]
+
+
+def final_ingredients_value(model):
     ing1_amount = 1.0 + model.computed.has_class["Ingredients"]
     ing2_amount = model.computed.ing2_amount.astype(int)
 
@@ -30,17 +65,28 @@ def total_ing_value(model):
     ing_value += ing2_amount * ing2_power
     ing_value /= (ing1_weigh + ing2_weigh)
 
-    # Add the growth curve
+    # flooring
+    ing_value = np.floor(ing_value)
+
+    # scale by the growth curve
     ing_value *= ing_growth(model)
 
     return ing_value
 
 
 def ing_growth(model):
-    a = model.vars["Ing Growth Poly"]
-    x = model.data["Level"].to_numpy()
-    g = ((a[0] * x) + a[1]) * x + a[2]
-    return 1.0 + g
+    return (
+            1.0 + 0.01 * lookup_table(
+        model.data["Level"],
+        game.data.ing_growth,
+        "Level",
+        "Ing Growth"
+    ).to_numpy()
+    )
+
+
+def final_berries_value(model):
+    return ber_amount(model) * ber_value_at_level(model)
 
 
 def ber_amount(model):
@@ -52,14 +98,15 @@ def ber_value_at_level(model):
 
 
 def ing_fraction(model):
-    return model.vars["Pokemons ing fractions"][model.computed.ing_positions]
+    # 0.abc
+    return truncate(model.vars["Pokemons ing fractions"][model.computed.ing_positions], 3)
 
 
 def skl_chance(model):
-    return model.vars["Pokemons skill chances"][model.computed.skl_positions]
+    return truncate(model.vars["Pokemons skill chances"][model.computed.skl_positions], 3)
 
 
-def skl_table(model):
+def skill_value(model):
     return model.computed.skill_value_at_level
 
 
@@ -110,43 +157,12 @@ def fractional_help_count(model):
 def bonus_subskill(model):
     bonus = 1.0
 
+    lookup = game.data.subskills.set_index("Subskill")["RP Bonus Estimate"]
+
     for name in game.subskills.bonus_names:
-        bonus = bonus + model.computed.has_subskill[name] * model.vars[name]
+        bonus = bonus + model.computed.has_subskill[name] * lookup[name]
 
     return bonus
-
-
-def compute_rp(variables, data, computed, unpack_info):
-    if computed is None:
-        computed = make_precomputed_columns(data)
-
-    unpacked = unpack(variables, unpack_info)
-    m = RPModelData(data, computed, unpacked)
-
-    ing = ing_fraction(m) * ing_modifier(m)
-
-    ingredients_value = ing * total_ing_value(m)
-    berries_value = (1.0 - ing) * ber_amount(m) * ber_value_at_level(m)
-    main_skill_value = skl_modifier(m) * skl_chance(m) * skl_table(m)
-
-    help_count = fractional_help_count(m)
-    energy_correction = energy_modifier(m)
-    bonus = bonus_subskill(m)
-
-    # Optional flooring of the three main components in RP.
-    # (This does not seem to improve the guess, maybe they are multiplied by help count then floored ?)
-    ingredients_value = optional_floor(ingredients_value, FitOptions.rounding.components, 0.01)
-    berries_value = optional_floor(berries_value, FitOptions.rounding.components, 0.01)
-    main_skill_value = optional_floor(main_skill_value, FitOptions.rounding.components, 0.01)
-
-    # Optional flooring of the bonus together with energy
-    rounded_bonus = optional_floor(bonus * energy_correction, FitOptions.rounding.bonus, 0.01)
-
-    # core rp formula
-    rp = rounded_bonus * help_count * (ingredients_value + berries_value + main_skill_value)
-
-    # Optional final rounding of RP value
-    return optional_round(rp, FitOptions.rounding.final_rp, 1.0)
 
 
 # Minimum columns for data:
@@ -162,12 +178,15 @@ def compute_rp(variables, data, computed, unpack_info):
 #
 # Also required, but we could compute from dex
 # ---------------------------------------------
+#
 # Class
 # Freq1
 # Ing1P
 # Berry1
 # BerryL
 # SklVal
+# Helps per hour
+#
 def make_precomputed_columns(data):
     computed = SimpleNamespace()
 
@@ -226,40 +245,38 @@ def make_precomputed_columns(data):
     # Main skill and level
     computed.skill_value_at_level = data["SklVal"].to_numpy()
 
-    # Here, we will reproduce the Help/hr information as a test of using those one-hot vectors.
     computed.period_base = data["Freq1"].to_numpy()
-    computed.period_level = computed.period_base * ((501 - data["Level"].to_numpy()) / 500.0)
+    computed.helps_per_hour = data["Helps per hour"].to_numpy()
 
-    nature_correction = (
-            1  # Speed is the only nature where positive effect is a subtraction
-            - (computed.has_positive_trait["Speed of Help"] * game.natures.soh_effect)
-            + (computed.has_negative_trait["Speed of Help"] * game.natures.soh_effect)
-    )
+    # We copy help per hour from datasheet during debug, eventually we go back to our own.
+    #
+    # nature_correction = (
+    #         1  # Speed is the only nature where positive effect is a subtraction
+    #         - (computed.has_positive_trait["Speed of Help"] * game.natures.soh_effect)
+    #         + (computed.has_negative_trait["Speed of Help"] * game.natures.soh_effect)
+    # )
+    #
+    # subskill_correction = (
+    #         1
+    #         - (computed.has_subskill["Helping Speed S"] * game.subskills.help_s_effect)
+    #         - (computed.has_subskill["Helping Speed M"] * game.subskills.help_m_effect)
+    # )
+    #
+    # level_adjust = ((501 - data["Level"].to_numpy()) / 500.0)
+    # final_correction = truncate(level_adjust * nature_correction * subskill_correction, 4)
+    # final_period = computed.period_base * final_correction
+    #
+    # # But we are almost certain we need to floor the help per hour
+    # computed.helps_per_hour = truncate(3600 / final_period, 2)
+    #
 
-    subskill_correction = (
-            1
-            - (computed.has_subskill["Helping Speed S"] * game.subskills.help_s_effect)
-            - (computed.has_subskill["Helping Speed M"] * game.subskills.help_m_effect)
-    )
-
-    final_period = computed.period_level * nature_correction * subskill_correction
-
-    # We are not sure if we need to floor the time period
-    final_period = optional_floor(
-        final_period, FitOptions.rounding.period, 0.01)
-
-    # But we are almost certain we need to floor the help per hour
-    computed.helps_per_hour = floor(3600 / final_period, 0.01)
-
-    # map data point to a pokemon index
-
-    pokemon_to_position = {}
+    # map data points to a pokemon index
 
     pokemons = game.data.pokedex["Pokemon"]
-    pokemon_to_position = dict(zip(pokemons, range(len(pokemons))))
+    pokemon_name_to_pokedex_position = dict(zip(pokemons, range(len(pokemons))))
 
-    data_pokemon_positions = np.array(list(map(lambda x: pokemon_to_position[x], data["Pokemon"])))
-    computed.ing_positions = data_pokemon_positions
-    computed.skl_positions = data_pokemon_positions
+    data_line_to_pokedex_position = np.array(list(map(lambda x: pokemon_name_to_pokedex_position[x], data["Pokemon"])))
+    computed.ing_positions = data_line_to_pokedex_position
+    computed.skl_positions = data_line_to_pokedex_position
 
     return computed

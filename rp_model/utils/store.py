@@ -5,7 +5,8 @@ from .files import save, try_load
 
 class DataStore:
 
-    def __init__(self, data=None, created_on=None, dependency_hash=None, max_age=None):
+    def __init__(self, path=None, data=None, created_on=None, dependency_hash=None, max_age=None):
+        self._path = path
         self._data = data
         self._created_on = created_on if created_on is not None else datetime.now()
         self._dependency_hash = dependency_hash
@@ -24,20 +25,24 @@ class DataStore:
         self._data = data
         return self
 
+    def use_path(self, path):
+        self._path = path
+        return self
+
     def data(self):
         return self._data
 
     def is_valid(self):
         return self._data is not None
 
-    def save_to(self, path):
-        save(path, self)
-        return self
+    def save_to_path(self):
+        save(self._path, self)
+        return
 
-    def try_read_and_validate(self, path):
+    def try_read_and_validate(self):
         self._data = None
 
-        conditional_data = try_load(path)
+        conditional_data = try_load(self._path)
         if conditional_data is None or not isinstance(conditional_data, DataStore):
             return self
         if not conditional_data.validate_against(self._dependency_hash, self._max_age):

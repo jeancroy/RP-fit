@@ -27,6 +27,7 @@ class GameData:
         subskills=f"{get_files_directory()}/data/subskills.pickle",
         mainskills=f"{get_files_directory()}/data/mainskills.pickle",
         pokedex=f"{get_files_directory()}/data/pokedex.pickle",
+        ing_growth=f"{get_files_directory()}/data/ing_growth.pickle",
     )
 
     data = SimpleNamespace()

@@ -11,6 +11,9 @@ def download_data():
     data_10_49 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_10_49"])
     data_50_74 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_50_74"])
 
+    # ugly patch, sheet 1-9 miss that column, because there's no skill
+    data_1_9["MiscMult"] = data_1_9["NrgNat"]
+
     df = pd.concat([data_1_9, data_10_49, data_50_74], axis=0)
     df.dropna(subset=["Pokemon", "Level", "RP", "Nature", "MS lvl"], inplace=True)
     df.fillna(
@@ -19,6 +22,10 @@ def download_data():
     )
     df.fillna(
         {'Sub Skill 1': '', 'Sub Skill 2': '', 'Sub Skill 3': '', 'Ingredient 2': '', 'Source': ''},
+        inplace=True
+    )
+    df.fillna(
+        {'MiscMult': 1.0, 'HelpSub': 1.0, 'IngrSub': 1.0, 'SkillSub': 1.0},
         inplace=True
     )
 

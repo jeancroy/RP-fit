@@ -4,22 +4,32 @@ import numbers
 from copy import copy
 from collections import namedtuple
 
-PackInfo = namedtuple("PackInfo", "type start size metadata rescale")
+PackInfo = namedtuple("PackInfo", "type start size rescale source")
 RangeInfo = namedtuple("RangeInfo", "low high")
 ScaleInfo = namedtuple("ScaleInfo", "offset scale")
+
+frozen_type = type("frozen")
+subset_type = type("subset")
 
 
 # The pack method is used to transform a dict name-> list of numbers into a 1D numpy vector.
 # We also generate the metadata needed to do the opposite transform.
 # We also support name -> scalar and nested dict.
 #
-# Frozen keys allow removing a variable from the 1D vector without changing the code
-# that consumes the unpacked dict. It'll also be used for non-numeric keys.
-#
 # Range_info_dict is of the same shape as the source.
-# But each leaf is either None or a RangeInfo tuple.
-# The goal is to allow the optimizer to work with values
-# normalized to be in the [-1, 1] range most of the time.
+#  - Each leaf is either None or a RangeInfo tuple.
+#  - Allows the optimizer to work with values
+#    normalized to be in [-1, 1] most of the time.
+#  - Those are not hard bound, just scaling.
+#
+# Frozen keys allow removing a variable from the 1D vector that the optimizer sees,
+# without changing the code that consumes the unpacked dict.
+# It'll also be used for non-numeric keys.
+#
+# Subset keys (todo) are the same idea as frozen key.
+# But a small subset is allowed to change.
+#  - extracted from the vector when packing
+#  - copied over the frozen base when upacking.
 
 def pack(source, range_info_dict=None, append_to=None, frozen_keys=None):
     if frozen_keys is None:
@@ -30,48 +40,49 @@ def pack(source, range_info_dict=None, append_to=None, frozen_keys=None):
 
     for key, value in source.items():
 
+        # This is the position of the value in output vector
         start = len(output)
 
-        # Frozen keys are not packed in the output vector
-        # But they will be copied as is to the unpacked dict
+        # Frozen keys are not packed in the output vector (position=none)
+        # But they will be copied as-is to the unpacked dict
         if key in frozen_keys or isinstance(value, str):
-            unpack_info[key] = PackInfo(type(value), None, None, copy(value), None)
+            unpack_info[key] = PackInfo(frozen_type, None, None, None, copy(value))
 
         elif isinstance(value, (int, float, complex)):
-            scaled, scale_info = pack_rescale(value, key, range_info_dict)
-            output.append(scaled)
-            unpack_info[key] = PackInfo(type(value), start, 1, None, scale_info)
+            scaled_value, scale_info = pack_rescale(value, key, range_info_dict)
+            output.append(scaled_value)
+            unpack_info[key] = PackInfo(type(value), start, 1, scale_info, None)
 
         elif isinstance(value, np.ndarray) and value.size > 0:
-            scaled, scale_info = pack_rescale(value, key, range_info_dict)
+            scaled_value, scale_info = pack_rescale(value, key, range_info_dict)
 
             if value.ndim > 0:
-                output.extend(scaled)
+                output.extend(scaled_value)
             else:
-                output.append(scaled)  # scalar ndarray
+                output.append(scaled_value)  # scalar ndarray
 
-            unpack_info[key] = PackInfo(type(value), start, value.size, value.shape, scale_info)
+            unpack_info[key] = PackInfo(type(value), start, value.size, scale_info, copy(value))
 
         elif isinstance(value, pd.Series) and value.size > 0:
-            scaled, scale_info = pack_rescale(value, key, range_info_dict)
-
-            output.extend(scaled)
-            unpack_info[key] = PackInfo(type(value), start, value.size, value.index, scale_info)
+            scaled_value, scale_info = pack_rescale(value, key, range_info_dict)
+            output.extend(scaled_value)
+            unpack_info[key] = PackInfo(type(value), start, value.size, scale_info, copy(value))
 
         elif isinstance(value, (list, tuple)):
 
-            # Empty list or non-numeric treated the same as frozen
+            # Empty list or non-numeric list treated the same as frozen
             if len(value) == 0 or not isinstance(value[0], numbers.Number):
-                unpack_info[key] = PackInfo(type(value), None, None, copy(value), None)
+                unpack_info[key] = PackInfo(frozen_type, None, None, None, copy(value))
 
             else:
-                scaled, scale_info = pack_rescale(np.array(value), key, range_info_dict)
-                output.extend(scaled)
-                unpack_info[key] = PackInfo(type(value), start, len(value), type(value[0]), scale_info)
+                scaled_value, scale_info = pack_rescale(np.array(value), key, range_info_dict)
+                output.extend(scaled_value)
+                unpack_info[key] = PackInfo(type(value), start, len(value), scale_info, copy(value))
 
         elif isinstance(value, dict):
+            # for dict, we basically recurse.
             _, nfo = pack(value, range_info_dict, append_to=output)
-            unpack_info[key] = PackInfo(type(value), start, 1, nfo, None)
+            unpack_info[key] = PackInfo(type(value), start, 1, None, nfo)
 
     return np.array(output), unpack_info
 
@@ -79,31 +90,31 @@ def pack(source, range_info_dict=None, append_to=None, frozen_keys=None):
 def unpack(x, unpack_info):
     unpacked = {}
 
-    for k, v in unpack_info.items():
+    for name, packed_value in unpack_info.items():
 
-        type_info, start, size, metadata, scale_info = v
+        type_info, start, size, scale_info, source = packed_value
         value = unpack_rescale(x, start, size, scale_info)
 
-        if start is None:
-            unpacked[k] = metadata
+        if type_info is frozen_type:
+            unpacked[name] = source
 
         elif type_info in (int, float, complex, numbers.Number):
-            unpacked[k] = value
+            unpacked[name] = value
 
         elif type_info is np.ndarray:
-            unpacked[k] = np.array(value).reshape(metadata)
+            unpacked[name] = np.array(value).reshape(source.shape)
 
         elif type_info is pd.Series:
-            unpacked[k] = pd.Series(data=value, index=metadata)
+            unpacked[name] = pd.Series(data=value, index=source.index)
 
         elif type_info is list:
-            unpacked[k] = list(value)
+            unpacked[name] = list(value)
 
         elif type_info is tuple:
-            unpacked[k] = tuple(value)
+            unpacked[name] = tuple(value)
 
         elif type_info is dict:
-            unpacked[k] = unpack(x, metadata)
+            unpacked[name] = unpack(x, source)
 
     return unpacked
 
@@ -135,21 +146,3 @@ def unpack_rescale(x, start, size, scale_info):
 
     offset, scale = scale_info
     return value * scale + offset
-
-
-def simplify_opt_result(opt):
-    # remove some stuff we don't need to save.
-    if "jac" in opt:
-        del opt.jac
-    if "active_mask" in opt:
-        del opt.active_mask
-    if "fun" in opt:
-        del opt.fun
-    if "final_simplex" in opt:
-        del opt.final_simplex
-
-    return opt
-
-
-def lookup_table(serie1, table2, table2_lookup_column, table2_return_column):
-    return serie1.map(table2.set_index(table2_lookup_column)[table2_return_column])

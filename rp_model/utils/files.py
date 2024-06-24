@@ -30,7 +30,7 @@ def isfile(filepath):
 
 
 def try_load(filepath):
-    return None if not isfile(filepath) else load(filepath)
+    return None if not filepath or not isfile(filepath) else load(filepath)
 
 
 def last_modified_file_with_pattern(search_path, pattern_str):
