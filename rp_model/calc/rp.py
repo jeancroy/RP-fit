@@ -75,14 +75,14 @@ def final_ingredients_value(model):
 
 
 def ing_growth(model):
-    return (
-            1.0 + 0.01 * lookup_table(
+    ing_growth_table = lookup_table(
         model.data["Level"],
         game.data.ing_growth,
         "Level",
         "Ing Growth"
-    ).to_numpy()
     )
+
+    return 1.0 + 0.01 * ing_growth_table.to_numpy()
 
 
 def final_berries_value(model):
