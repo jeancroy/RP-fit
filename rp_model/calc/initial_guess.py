@@ -2,13 +2,15 @@ import numpy as np
 
 from .game import game
 from ..utils import RangeInfo
+from ..type import LastFitData
 
 
-def make_initial_guess():
+def make_initial_guess(*, include_last_fit_dict: bool = False):
     # Here we build the initial guess
 
     initial_guess = {}
     range_info = {}
+    last_fit = {}
 
     # Load Initial guess for the ing% and skillProduct ( skill% * skillValue ) from Pokedex
 
@@ -22,6 +24,8 @@ def make_initial_guess():
         # Last fit
         previous_ing_fractions.append(record["Last fit ing"])
         previous_skl_chances.append(record["Last fit skl"])
+
+        last_fit[record["Pokemon"]] = LastFitData(ing=record["Last fit ing"], skl=record["Last fit skl"])
 
     initial_guess["Pokemons ing fractions"] = np.array(previous_ing_fractions)
     initial_guess["Pokemons skill chances"] = np.array(previous_skl_chances)
@@ -45,4 +49,7 @@ def make_initial_guess():
     #     initial_guess[record["Subskill"]] = record["RP Bonus Estimate"]
     #     range_info[record["Subskill"]] = RangeInfo(0.05, 0.30)
 
-    return initial_guess, range_info
+    if not include_last_fit_dict:
+        return initial_guess, range_info
+
+    return initial_guess, range_info, last_fit

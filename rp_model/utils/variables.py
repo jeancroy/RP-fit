@@ -1,8 +1,9 @@
+import numbers
+from collections import namedtuple
+from copy import copy
+
 import numpy as np
 import pandas as pd
-import numbers
-from copy import copy
-from collections import namedtuple
 
 PackInfo = namedtuple("PackInfo", "type start size rescale source")
 RangeInfo = namedtuple("RangeInfo", "low high")
@@ -146,3 +147,17 @@ def unpack_rescale(x, start, size, scale_info):
 
     offset, scale = scale_info
     return value * scale + offset
+
+
+def simplify_opt_result(opt):
+    # remove some stuff we don't need to save.
+    if "jac" in opt:
+        del opt.jac
+    if "active_mask" in opt:
+        del opt.active_mask
+    if "fun" in opt:
+        del opt.fun
+    if "final_simplex" in opt:
+        del opt.final_simplex
+
+    return opt

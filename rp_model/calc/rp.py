@@ -3,7 +3,8 @@ from types import SimpleNamespace
 import numpy as np
 
 from .game import game
-from ..utils import unpack, truncate, lookup_table
+from ..type import LastFitData
+from ..utils import lookup_table, round_precise, truncate, unpack
 
 
 class RPModelData:
@@ -13,27 +14,27 @@ class RPModelData:
         self.vars = variables
 
 
-def compute_rp_components(variables, data, computed, unpack_info):
+def compute_rp_components(variables, data, computed, unpack_info, /, fit: LastFitData | None = None):
     if computed is None:
         computed = make_precomputed_columns(data)
 
     unpacked = unpack(variables, unpack_info)
     m = RPModelData(data, computed, unpacked)
 
-    skill_ratio = truncate(skl_chance(m) * skl_modifier(m), 4)
-    ingredient_ratio = truncate(ing_fraction(m) * ing_modifier(m), 4)
+    skill_ratio = truncate((fit.skl if fit is not None else skl_chance(m)) * skl_modifier(m), 4)
+    ingredient_ratio = truncate((fit.ing if fit is not None else ing_fraction(m)) * ing_modifier(m), 4)
     berry_ratio = (1.0 - ingredient_ratio)
 
     help_count = fractional_help_count(m)
     ingredients_value = truncate(help_count * ingredient_ratio * final_ingredients_value(m), 2)
     berries_value = truncate(help_count * berry_ratio * final_berries_value(m), 2)
-    main_skill_value = truncate(help_count * skill_ratio * skill_value(m), 2)
+    main_skill_value = truncate(help_count * (skill_ratio + np.finfo(np.float64).eps) * skill_value(m), 2)
 
     # Optional flooring of the bonus together with energy
     bonus_multipliers = truncate(bonus_subskill(m) * energy_modifier(m), 2)
 
     # Put items together.
-    rp = np.round(bonus_multipliers * (ingredients_value + berries_value + main_skill_value))
+    rp = round_precise(bonus_multipliers * (ingredients_value + berries_value + main_skill_value))
 
     return dict({
         "rp_model": rp,
@@ -44,8 +45,8 @@ def compute_rp_components(variables, data, computed, unpack_info):
     })
 
 
-def compute_rp(variables, data, computed, unpack_info):
-    results = compute_rp_components(variables, data, computed, unpack_info)
+def compute_rp(variables, data, computed, unpack_info, /, fit: LastFitData | None = None, ):
+    results = compute_rp_components(variables, data, computed, unpack_info, fit)
     return results["rp_model"]
 
 
