@@ -1,5 +1,6 @@
 import scipy
 import pandas as pd
+from numpy import float64
 from pandas import DataFrame
 from dataclasses import dataclass
 from dfols import solve as dfols_solve
@@ -64,7 +65,7 @@ def update_fit_cached() -> RpModelFitResult:
 
 def run_optimizer(data, x0, unpack_info):
     computed = make_precomputed_columns(data)
-    reference_rp = data["RP"].to_numpy()
+    reference_rp = data["RP"].astype(float64).to_numpy()
 
     def residual(x):
         return reference_rp - compute_rp(x, data, computed, unpack_info)
