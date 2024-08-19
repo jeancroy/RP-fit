@@ -21,4 +21,3 @@ class FitOptions:
     }
 
     least_squares_kwargs = dict(loss="huber", xtol=None, verbose=2, max_nfev=200, f_scale=10)
-
