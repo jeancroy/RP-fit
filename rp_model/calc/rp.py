@@ -16,14 +16,14 @@ class RPModelData:
 
 def total_ing_value(model):
     ing1_amount = 1.0 + model.computed.has_class["Ingredients"]
-    ing2_amount = model.computed.ing2_amount
+    ing2_amount = model.computed.ing2_amount.astype(int)
 
     ing1_power = model.computed.ing1_power_base
     ing2_power = model.computed.ing2_power_base
 
     # Equal weigh of 1 has been confirmed
     ing1_weigh = 1.0
-    ing2_weigh = (model.computed.ing2_amount > 0)
+    ing2_weigh = (model.computed.ing2_amount.astype(int) > 0)
 
     # weighted average of the N ingredients and their amount
     ing_value = ing1_amount * ing1_power
