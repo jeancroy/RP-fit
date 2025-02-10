@@ -53,7 +53,6 @@ class DataStore:
         return self
 
     def validate_against(self, dependency_hash=None, max_age=None):
-
         if self._data is None:
             return False
 

@@ -2,9 +2,10 @@ from enum import Enum, auto
 
 
 class RpFitResult(Enum):
-    FAILED = auto()
-    SUBOPTIMAL = auto()
-    PERFECT = auto()
+    # Value represents priority - fit result with the highest priority should be used
+    FAILED = 1
+    SUBOPTIMAL = 2
+    PERFECT = 3
 
     @property
     def is_possible_fit(self) -> bool:
