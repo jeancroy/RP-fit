@@ -46,7 +46,7 @@ def get_rate_combo_fit_result(
     if not current_fit_result.is_possible_fit:
         if idx is not None and idx % 1000 == 0:
             print(
-                f"{initiator} - Finding rate combo of {pokemon_name:<15} - "
+                f"{initiator} - Finding rate combo of {pokemon_name:<25} - "
                 f"{idx} / {MAX_POSSIBLE_FITS} ({idx / MAX_POSSIBLE_FITS:.2%})"
             )
 
@@ -66,13 +66,6 @@ def get_rate_combo_fit_result(
             centroid = surrounding
             break
 
-    # After suboptimal result check, report the reason of suboptimal if it doesn't flip to perfect
-    if current_fit_result == RpFitResult.SUBOPTIMAL:
-        print(
-            f"{initiator} - {pokemon_name:<15} has suboptimal fit due to the following RP diff: "
-            f"{rp_diff_clean[rp_diff_clean != 0]} ({rp_diff_clean.size})"
-        )
-
     # Ensure that there are no multiple perfect results
     if current_fit_result == RpFitResult.PERFECT:
         perfect_fits = [centroid]
@@ -89,7 +82,7 @@ def get_rate_combo_fit_result(
 
         if len(perfect_fits) > 1:
             print(
-                f"{initiator} - {pokemon_name:<15} has multiple ({len(perfect_fits)}) perfect fits: "
+                f"{initiator} - {pokemon_name:<25} has multiple ({len(perfect_fits)}) perfect fits: "
                 f"{" / ".join(f"[Ing {fit.ing:>6.2%} / Skl {fit.skl:>6.2%}]" for fit in perfect_fits)}"
             )
             current_fit_result = RpFitResult.SUBOPTIMAL
@@ -98,7 +91,13 @@ def get_rate_combo_fit_result(
         print(f"{initiator} - WARNING - RP diff of {pokemon_name} has NaN")
 
     print(
-        f"{initiator} - [{current_fit_result.name}] RP fit of {pokemon_name:<15} found at: "
+        f"{initiator} - [{current_fit_result.name}] RP fit of {pokemon_name:<25} found at: "
         f"Ing {centroid.ing:>6.2%} / Skl {centroid.skl:>6.2%}"
     )
+    if current_fit_result == RpFitResult.SUBOPTIMAL:
+        print(
+            f"{" " * (len(initiator) + 3)}RP diff: {rp_diff_clean[rp_diff_clean != 0]} "
+            f"({(rp_diff_clean != 0).sum()} / {rp_diff_clean.size})"
+        )
+
     return centroid, current_fit_result

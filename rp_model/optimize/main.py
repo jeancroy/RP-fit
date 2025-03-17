@@ -88,6 +88,13 @@ def run_optimizer(
                 "result": RpFitResult.FAILED
             })
 
+    print(f"{"=" * 25} Final Results {"=" * 25}")
+    for solution in solved_data:
+        print(
+            f"{solution["pokemon"]:>25} - "
+            f"[Ing] {solution["ing"]:6.2%} [Skl] {solution["skl"]:6.2%} ({solution["result"].name})"
+        )
+
     return solved_data
 
 
@@ -99,9 +106,6 @@ def is_all_last_fit_perfect(
 ) -> bool:
     for pokemon_name, grouped in data.groupby("Pokemon"):
         pokemon_name: str
-
-        # if pokemon_name != "Wooper (Paldean Form)":
-        #     continue
 
         last_fit_of_pokemon = last_fit.get(pokemon_name, LastFitData(ing=0.2, skl=0.02))
 
