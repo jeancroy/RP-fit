@@ -18,7 +18,7 @@ def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> R
 
     if rp_diff_clean.min() >= -1 and rp_diff_clean.max() <= 1:
         # Allow small rounding error (1 per 50 data) due to likely rounding reason
-        return RpFitResult.PERFECT if lax and abs(rp_diff_clean.mean()) < 1 / 50 else RpFitResult.SUBOPTIMAL
+        return RpFitResult.PERFECT if lax and abs(rp_diff_clean).mean() < 1 / 50 else RpFitResult.SUBOPTIMAL
 
     return RpFitResult.FAILED
 
