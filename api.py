@@ -18,7 +18,6 @@ class RpModelFitResult:
 
 def update_fit_cached() -> RpModelFitResult:
     refresh_pokedex()
-    # refresh_main_skill()
 
     data = download_data()
     data.to_pickle(FitOptions.data_file)
