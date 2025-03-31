@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pandas as pd
 
-from ..files import get_files_directory
+from ..env import RP_MODEL_FILE_PATH
 
 
 class GameData:
@@ -23,11 +23,11 @@ class GameData:
     )
 
     data_files = SimpleNamespace(
-        natures=f"{get_files_directory()}/data/natures.pickle",
-        subskills=f"{get_files_directory()}/data/subskills.pickle",
-        mainskills=f"{get_files_directory()}/data/mainskills.pickle",
-        pokedex=f"{get_files_directory()}/data/pokedex.pickle",
-        ing_growth=f"{get_files_directory()}/data/ing_growth.pickle",
+        natures=f"{RP_MODEL_FILE_PATH}/data/natures.pickle",
+        subskills=f"{RP_MODEL_FILE_PATH}/data/subskills.pickle",
+        mainskills=f"{RP_MODEL_FILE_PATH}/data/mainskills.pickle",
+        pokedex=f"{RP_MODEL_FILE_PATH}/data/pokedex.pickle",
+        ing_growth=f"{RP_MODEL_FILE_PATH}/data/ing_growth.pickle",
     )
 
     data = SimpleNamespace()

@@ -1,8 +1,4 @@
-from types import SimpleNamespace
-
-from ..files import get_files_directory, from_files_directory
-
-# print(f"RP model file path: {get_files_directory()}")
+from ..files import from_files_directory
 
 
 class FitOptions:
