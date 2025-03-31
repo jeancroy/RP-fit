@@ -7,7 +7,7 @@ from .check import get_rate_combo_fit_result
 from .traverse import traverse_last_fit
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
-from ..env import is_pokemon_included_for_rp_model
+from ..env import RP_MODEL_IS_GLOBAL_CHECK, is_pokemon_included_for_rp_model
 from ..type import LastFitData
 
 
@@ -63,12 +63,19 @@ def run_optimizer(
             }
 
             single_mon_fit_results.append(single_fit_result)
-            if fit_result != RpFitResult.PERFECT:
+            if RP_MODEL_IS_GLOBAL_CHECK or fit_result != RpFitResult.PERFECT:
                 # Keep recording fits if the result is not failed
                 continue
 
             single_mon_fit_results = [single_fit_result]
             break
+
+        if RP_MODEL_IS_GLOBAL_CHECK:
+            for fit_result in single_mon_fit_results:
+                if fit_result["result"] == RpFitResult.FAILED:
+                    continue
+
+                print(fit_result)
 
         try:
             fit_result_to_use_for_mon = sorted(
