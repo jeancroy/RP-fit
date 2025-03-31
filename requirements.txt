@@ -10,9 +10,6 @@ jupyter
 
 # Plotting
 matplotlib
-seaborn
-tqdm
 
-# Optimizers
-DFO-LS
-
+# Environment setup
+environs

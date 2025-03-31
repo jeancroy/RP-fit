@@ -7,6 +7,7 @@ from .check import get_rate_combo_fit_result
 from .traverse import traverse_last_fit
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
+from ..env import is_pokemon_included_for_rp_model
 from ..type import LastFitData
 
 
@@ -33,8 +34,8 @@ def run_optimizer(
     for pokemon_name, grouped in data.groupby("Pokemon"):
         pokemon_name: str
 
-        # if pokemon_name != "Wooper (Paldean Form)":
-        #     continue
+        if not is_pokemon_included_for_rp_model(pokemon_name):
+            continue
 
         last_fit_of_pokemon = last_fit_dict.get(pokemon_name, LastFitData(ing=0.2, skl=0.02))
 
@@ -106,6 +107,9 @@ def is_all_last_fit_perfect(
 ) -> bool:
     for pokemon_name, grouped in data.groupby("Pokemon"):
         pokemon_name: str
+
+        if not is_pokemon_included_for_rp_model(pokemon_name):
+            continue
 
         last_fit_of_pokemon = last_fit.get(pokemon_name, LastFitData(ing=0.2, skl=0.02))
 
