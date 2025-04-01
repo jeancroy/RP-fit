@@ -249,28 +249,6 @@ def make_precomputed_columns(data):
     computed.period_base = data["Freq1"].to_numpy()
     computed.helps_per_hour = data["Helps per hour"].to_numpy()
 
-    # We copy help per hour from datasheet during debug, eventually we go back to our own.
-    #
-    # nature_correction = (
-    #         1  # Speed is the only nature where positive effect is a subtraction
-    #         - (computed.has_positive_trait["Speed of Help"] * game.natures.soh_effect)
-    #         + (computed.has_negative_trait["Speed of Help"] * game.natures.soh_effect)
-    # )
-    #
-    # subskill_correction = (
-    #         1
-    #         - (computed.has_subskill["Helping Speed S"] * game.subskills.help_s_effect)
-    #         - (computed.has_subskill["Helping Speed M"] * game.subskills.help_m_effect)
-    # )
-    #
-    # level_adjust = ((501 - data["Level"].to_numpy()) / 500.0)
-    # final_correction = truncate(level_adjust * nature_correction * subskill_correction, 4)
-    # final_period = computed.period_base * final_correction
-    #
-    # # But we are almost certain we need to floor the help per hour
-    # computed.helps_per_hour = truncate(3600 / final_period, 2)
-    #
-
     # map data points to a pokemon index
 
     pokemons = game.data.pokedex["Pokemon"]
