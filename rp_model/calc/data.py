@@ -10,11 +10,12 @@ def download_data():
     data_1_9 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_1_9"])
     data_10_49 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_10_49"])
     data_50_74 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_50_74"])
+    data_legacy = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["legacy"])
 
     # ugly patch, sheet 1-9 miss that column, because there's no skill
     data_1_9["MiscMult"] = data_1_9["NrgNat"]
 
-    df = pd.concat([data_1_9, data_10_49, data_50_74], axis=0)
+    df = pd.concat([data_1_9, data_10_49, data_50_74, data_legacy], axis=0)
     df.dropna(subset=["Pokemon", "Level", "RP", "Nature", "MS lvl"], inplace=True)
     df.fillna(
         {'Amnt': 0, 'Ing2P': 0, 'Help skill bonus': 1, 'RP Multiplier': 1, 'ModelRP': -1, 'Difference': -1},
