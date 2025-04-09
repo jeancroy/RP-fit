@@ -36,13 +36,13 @@ def compute_rp_components(variables, data, computed, unpack_info, /, fit: LastFi
     # Put items together.
     rp = round_precise(bonus_multipliers * (ingredients_value + berries_value + main_skill_value))
 
-    return dict({
+    return {
         "rp_model": rp,
         "ingredients_value_model": ingredients_value,
         "berries_value_model": berries_value,
         "main_skill_value_model": main_skill_value,
         "bonus_multipliers_model": bonus_multipliers,
-    })
+    }
 
 
 def compute_rp(variables, data, computed, unpack_info, /, fit: LastFitData | None = None, ):
@@ -51,7 +51,7 @@ def compute_rp(variables, data, computed, unpack_info, /, fit: LastFitData | Non
 
 
 def final_ingredients_value(model):
-    ing1_amount = 1.0 + model.computed.has_class["Ingredients"]
+    ing1_amount = 1.0 + model.computed.has_class["Ingredients"] + model.computed.has_class["All"]
     ing2_amount = model.computed.ing2_amount.astype(int)
 
     ing1_power = model.computed.ing1_power_base
@@ -91,7 +91,12 @@ def final_berries_value(model):
 
 
 def ber_amount(model):
-    return 1.0 + model.computed.has_class["Berries"] + model.computed.has_subskill["Berry Finding S"]
+    return (
+        1.0
+        + model.computed.has_class["Berries"]
+        + model.computed.has_class["All"]
+        + model.computed.has_subskill["Berry Finding S"]
+    )
 
 
 def ber_value_at_level(model):
@@ -195,7 +200,7 @@ def make_precomputed_columns(data):
 
     # Specialty (Class)
 
-    classes = ["Ingredients", "Berries", "Skills"]
+    classes = ["Ingredients", "Berries", "Skills", "All"]
     computed.has_class = dict([(c, (data["Class"] == c).astype(int).to_numpy()) for c in classes])
 
     # Natures
