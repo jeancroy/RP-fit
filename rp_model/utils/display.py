@@ -2,7 +2,6 @@ import sys
 
 import numpy as np
 import pandas as pd
-from IPython.display import display
 from tabulate import tabulate
 
 
@@ -10,6 +9,7 @@ from tabulate import tabulate
 def table(data, **kwargs):
     if isinstance(data, (list, pd.Series, pd.DataFrame, pd.Index)):
         if in_notebook():
+            from IPython.display import display
             display(tabulate(data, tablefmt='html', **kwargs))
         else:
             print(tabulate(data, tablefmt='plain', **kwargs))
