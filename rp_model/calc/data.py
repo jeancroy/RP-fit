@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import pandas as pd
 
 from .fit_options import FitOptions
@@ -7,10 +9,23 @@ from ..utils import download_sheet
 
 # %%
 def download_data():
-    data_1_9 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_1_9"])
-    data_10_49 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_10_49"])
-    data_50_74 = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["data_50_74"])
-    data_legacy = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["legacy"])
+    # Define the download tasks
+    target_sheet_ids = [
+        FitOptions.rp_sheet_ids["data_1_9"],
+        FitOptions.rp_sheet_ids["data_10_49"],
+        FitOptions.rp_sheet_ids["data_50_74"],
+        FitOptions.rp_sheet_ids["legacy"]
+    ]
+
+    # Download all sheets in parallel
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(
+            lambda target_sheet_id: download_sheet(FitOptions.rp_file_id, target_sheet_id),
+            target_sheet_ids
+        ))
+
+    # Unpack results
+    data_1_9, data_10_49, data_50_74, data_legacy = results
 
     # ugly patch, sheet 1-9 miss that column, because there's no skill
     data_1_9["MiscMult"] = data_1_9["NrgNat"]

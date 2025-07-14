@@ -1,13 +1,14 @@
-import pickle
-import requests
-from io import BytesIO
 import os
+import pickle
 import re
+from io import BytesIO
 
 import pandas as pd
+import requests
 
 
 def download_sheet(file_id, sheet_id):
+    print(f"Downloading sheet of File ID: {file_id} / Sheet ID: {sheet_id}")
     r = requests.get(f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv&id={file_id}&gid={sheet_id}")
     df = pd.read_csv(BytesIO(r.content), thousands=",")
     return df
