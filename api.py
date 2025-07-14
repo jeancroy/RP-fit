@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from pandas import DataFrame
 
@@ -41,7 +41,7 @@ def update_fit_cached() -> RpModelFitResult:
         print("RP model pickle loaded from cache")
         solved_data = store.data()
 
-    solution = DataFrame.from_records(solved_data, index="pokemon")
+    solution = DataFrame.from_records([asdict(item) for item in solved_data], index="pokemon")
     result = (DataFrame({"pokemon": game.data.pokedex["Pokemon"], "pokemonId": game.data.pokedex["Pokemon ID"]})
               .join(solution, on="pokemon")
               .rename(columns={"ing": "ingredientSplit", "skl": "skillValue", "result": "fitResult"}))

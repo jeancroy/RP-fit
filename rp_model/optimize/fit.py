@@ -39,7 +39,7 @@ def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> R
 def get_rate_combo_fit_result(
     pokemon_name: Hashable,
     idx: int | None,
-    centroid: LastFitData,
+    fit_data: LastFitData,
     reference_rp: npt.NDArray[np.float64],
     x0,
     unpack_info,
@@ -49,10 +49,10 @@ def get_rate_combo_fit_result(
     initiator: Literal["Solve", "Validate"],
     print_func: Callable[[str], None]
 ) -> tuple[LastFitData, RpFitResult]:
-    if result := _cache.get((pokemon_name, centroid)):
+    if result := _cache.get((pokemon_name, fit_data)):
         return result
 
-    rp_diff = reference_rp - compute_rp(x0, data, computed, unpack_info, fit=centroid)
+    rp_diff = reference_rp - compute_rp(x0, data, computed, unpack_info, fit=fit_data)
     # Clean as in NaNs removed
     # NaN can be caused by various reasons, including:
     # - New Pokémon max level released with outdated ingredient growth data
@@ -61,18 +61,18 @@ def get_rate_combo_fit_result(
     current_fit_result = get_rp_fit_result(rp_diff_clean, lax=True)
 
     if not current_fit_result.is_possible_fit:
-        if idx is not None and idx % 1000 == 0:
+        if idx is not None and idx % 3000 == 0:
             print_func(
                 f"{initiator} - Finding rate combo of {pokemon_name:<25} - "
                 f"{idx} / {MAX_POSSIBLE_FITS} ({idx / MAX_POSSIBLE_FITS:.2%})"
             )
 
-        _cache[(pokemon_name, centroid)] = centroid, RpFitResult.FAILED
-        return centroid, RpFitResult.FAILED
+        _cache[(pokemon_name, fit_data)] = fit_data, RpFitResult.FAILED
+        return fit_data, RpFitResult.FAILED
 
     if current_fit_result == RpFitResult.SUBOPTIMAL:
         # Check the surrounding of the suboptimal result to see if there is a perfect result
-        for surrounding in traverse_last_fit(centroid, max_radius=3):
+        for surrounding in traverse_last_fit(fit_data, max_radius=3):
             surrounding_fit_result = get_rp_fit_result(
                 remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
                 lax=False
@@ -81,14 +81,14 @@ def get_rate_combo_fit_result(
                 continue
 
             current_fit_result = surrounding_fit_result
-            centroid = surrounding
+            fit_data = surrounding
             break
 
     # Ensure that there are no multiple perfect results
     if current_fit_result == RpFitResult.PERFECT:
-        perfect_fits = [centroid]
+        perfect_fits = [fit_data]
         # Check the surrounding of the perfect result to make sure every other fit is not perfect
-        for surrounding in traverse_last_fit(centroid, max_radius=2, skip_center=True):
+        for surrounding in traverse_last_fit(fit_data, max_radius=2, skip_center=True):
             surrounding_fit_result = get_rp_fit_result(
                 remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
                 lax=False
@@ -110,7 +110,7 @@ def get_rate_combo_fit_result(
 
     print_func(
         f"{initiator} - [{current_fit_result.name}] RP fit of {pokemon_name:<25} found at: "
-        f"Ing {centroid.ing:>6.2%} / Skl {centroid.skl:>6.2%}"
+        f"Ing {fit_data.ing:>6.2%} / Skl {fit_data.skl:>6.2%}"
     )
     if current_fit_result == RpFitResult.SUBOPTIMAL:
         print_func(
@@ -118,5 +118,5 @@ def get_rate_combo_fit_result(
             f"({(rp_diff_clean != 0).sum()} / {rp_diff_clean.size} - {pokemon_name})"
         )
 
-    _cache[(pokemon_name, centroid)] = centroid, current_fit_result
-    return centroid, current_fit_result
+    _cache[(pokemon_name, fit_data)] = fit_data, current_fit_result
+    return fit_data, current_fit_result

@@ -22,14 +22,14 @@ def run_optimizer(
     last_fit_dict: dict[str, LastFitData],
     x0,
     unpack_info,
-) -> list[OptimizerSolvedDataEntry]:
+) -> set[OptimizerSolvedDataEntry]:
     # Group data by Pokemon and filter out Pokemon that should be included
     pokemon_groups = [
         (name, group) for name, group in data.groupby("Pokemon")
         if is_pokemon_included_for_rp_model(name)
     ]
 
-    solved_data: list[OptimizerSolvedDataEntry] = []
+    solved_data: set[OptimizerSolvedDataEntry] = set()
 
     with ThreadPoolExecutor() as executor:
         future_to_pokemon = {
@@ -46,13 +46,13 @@ def run_optimizer(
         }
 
         for future in as_completed(future_to_pokemon):
-            solved_data.append(future.result())
+            solved_data.add(future.result())
 
     print(f"{"=" * 25} Final Results {"=" * 25}")
-    for solution in sorted(solved_data, key=lambda x: x["pokemon"]):
+    for solution in sorted(solved_data, key=lambda x: x.pokemon):
         print(
-            f"{solution["pokemon"]:>25} - "
-            f"[Ing] {solution["ing"]:6.2%} [Skl] {solution["skl"]:6.2%} ({solution["result"].name})"
+            f"{solution.pokemon:>25} - "
+            f"[Ing] {solution.ing:6.2%} [Skl] {solution.skl:6.2%} ({solution.result.name})"
         )
 
     return solved_data
