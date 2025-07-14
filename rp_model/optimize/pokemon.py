@@ -19,7 +19,7 @@ def process_pokemon(
     pokemon_data_of_group,
     print_func: Callable[[str], None],
 ):
-    last_fit_of_pokemon = last_fit_dict.get(pokemon_name, LastFitData(ing=0.2, skl=0.02))
+    last_fit_of_pokemon = last_fit_dict.get(pokemon_name, LastFitData.default())
 
     computed = make_precomputed_columns(pokemon_data_of_group)
     reference_rp = pokemon_data_of_group["RP"].astype(float64).to_numpy()

@@ -20,7 +20,7 @@ def is_all_last_fit_perfect(
         if not is_pokemon_included_for_rp_model(pokemon_name):
             continue
 
-        last_fit_of_pokemon = last_fit.get(pokemon_name, LastFitData(ing=0.2, skl=0.02))
+        last_fit_of_pokemon = last_fit.get(pokemon_name, LastFitData.default())
 
         computed = make_precomputed_columns(grouped)
         reference_rp = grouped["RP"].astype(float64).to_numpy()
