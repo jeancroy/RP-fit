@@ -1,10 +1,11 @@
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import Hashable
 
 from pandas import DataFrame
 
 from .pokemon import process_pokemon
-from .typedef import OptimizerSolvedDataEntry
+from .typedef import OptimizerFitContext, OptimizerSolvedDataEntry
 from ..env import is_pokemon_included_for_rp_model
 from ..type import LastFitData
 
@@ -19,7 +20,7 @@ def thread_safe_print(message: str) -> None:
 
 def run_optimizer(
     data: DataFrame,
-    last_fit_dict: dict[str, LastFitData],
+    last_fit_dict: dict[Hashable, LastFitData],
     x0,
     unpack_info,
 ) -> set[OptimizerSolvedDataEntry]:
@@ -31,16 +32,18 @@ def run_optimizer(
 
     solved_data: set[OptimizerSolvedDataEntry] = set()
 
-    with ThreadPoolExecutor() as executor:
+    with ProcessPoolExecutor() as executor:
         future_to_pokemon = {
             executor.submit(
                 process_pokemon,
                 last_fit_dict,
-                x0,
-                unpack_info,
-                pokemon_name,
-                pokemon_data_of_group,
-                thread_safe_print
+                OptimizerFitContext(
+                    x0=x0,
+                    unpack_info=unpack_info,
+                    pokemon_name=pokemon_name,
+                    pokemon_data_of_group=pokemon_data_of_group,
+                    print_func=thread_safe_print,
+                ),
             )
             for pokemon_name, pokemon_data_of_group in pokemon_groups
         }
@@ -50,9 +53,6 @@ def run_optimizer(
 
     print(f"{"=" * 25} Final Results {"=" * 25}")
     for solution in sorted(solved_data, key=lambda x: x.pokemon):
-        print(
-            f"{solution.pokemon:>25} - "
-            f"[Ing] {solution.ing:6.2%} [Skl] {solution.skl:6.2%} ({solution.result.name})"
-        )
+        print(f"{solution.pokemon:>25} - {solution.fit} ({solution.result.name})")
 
     return solved_data

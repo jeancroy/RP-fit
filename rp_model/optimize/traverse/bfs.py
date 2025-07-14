@@ -1,11 +1,15 @@
 from typing import Generator
 
 from .const import MAX_FIT_RADIUS
-from ..const import ING_MAX, ING_MIN, SKILL_MAX, SKILL_MIN, TICK_INTERVAL
+from ...const import TICK_INTERVAL
 from ...type import LastFitData
 
 
-def traverse_at_radius_bfs(center: LastFitData, radius_tick: int, point_gap: float) -> Generator[LastFitData, None, None]:
+def traverse_at_radius_bfs(
+    center: LastFitData,
+    radius_tick: int,
+    point_gap: float
+) -> Generator[LastFitData, None, None]:
     radius = radius_tick * point_gap
 
     for offset_tick in range(-radius_tick + 1, radius_tick + 1):
@@ -36,5 +40,5 @@ def traverse_last_fit_bfs(
             yield from traverse_at_radius_bfs(center, radius_tick, point_gap)
 
     for fit in traverser():
-        if ING_MIN <= fit.ing <= ING_MAX and SKILL_MIN <= fit.skl <= SKILL_MAX:
+        if fit.is_in_boundary():
             yield fit

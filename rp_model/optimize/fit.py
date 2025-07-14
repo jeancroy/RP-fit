@@ -1,18 +1,18 @@
 from types import SimpleNamespace
-from typing import Callable, Hashable, Literal
+from typing import Hashable, Literal
 
 import numpy as np
 import numpy.typing as npt
-from pandas import DataFrame
 
-from .const import MAX_POSSIBLE_FITS
 from .traverse.bfs import traverse_last_fit_bfs
+from .typedef import OptimizerFitContext, RateComboFitResult
 from ..calc import compute_rp
+from ..const import MAX_POSSIBLE_FITS
 from ..enum import RpFitResult
 from ..type import LastFitData
 from ..utils import remove_nan
 
-_cache: dict[tuple[Hashable, LastFitData], tuple[LastFitData, RpFitResult]:] = {}
+_cache: dict[tuple[Hashable, LastFitData], RateComboFitResult] = {}
 
 
 def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> RpFitResult:
@@ -36,45 +36,58 @@ def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> R
     return RpFitResult.FAILED
 
 
-def get_rate_combo_fit_result(
-    pokemon_name: Hashable,
-    idx: int | None,
-    fit_data: LastFitData,
+def get_rp_diff(
+    context: OptimizerFitContext,
     reference_rp: npt.NDArray[np.float64],
-    x0,
-    unpack_info,
-    data: DataFrame,
     computed: SimpleNamespace,
-    /,
-    initiator: Literal["Solve", "Validate"],
-    print_func: Callable[[str], None]
-) -> tuple[LastFitData, RpFitResult]:
-    if result := _cache.get((pokemon_name, fit_data)):
-        return result
-
-    rp_diff = reference_rp - compute_rp(x0, data, computed, unpack_info, fit=fit_data)
+    fit_data: LastFitData,
+):
     # Clean as in NaNs removed
     # NaN can be caused by various reasons, including:
     # - New Pokémon max level released with outdated ingredient growth data
-    rp_diff_clean = remove_nan(rp_diff)
+    return remove_nan(reference_rp - compute_rp(
+        context.x0,
+        context.pokemon_data_of_group,
+        computed,
+        context.unpack_info,
+        fit=fit_data
+    ))
 
-    current_fit_result = get_rp_fit_result(rp_diff_clean, lax=True)
+
+def get_rate_combo_fit_result(
+    context: OptimizerFitContext,
+    fit_data: LastFitData,
+    reference_rp: npt.NDArray[np.float64],
+    computed: SimpleNamespace,
+    /,
+    initiator: Literal["Solve", "Validate"],
+    idx: int | None = None,
+    print_non_regular_result_only: bool = False,
+) -> RateComboFitResult:
+    if result := _cache.get((context.pokemon_name, fit_data)):
+        return result
+
+    rp_diff = get_rp_diff(context, reference_rp, computed, fit_data)
+
+    current_fit_result = get_rp_fit_result(rp_diff, lax=True)
 
     if not current_fit_result.is_possible_fit:
         if idx is not None and idx % 3000 == 0:
-            print_func(
-                f"{initiator} - Finding rate combo of {pokemon_name:<25} - "
+            context.print_func(
+                f"{initiator} - Finding rate combo of {context.pokemon_name:<25} - "
                 f"{idx} / {MAX_POSSIBLE_FITS} ({idx / MAX_POSSIBLE_FITS:.2%})"
             )
 
-        _cache[(pokemon_name, fit_data)] = fit_data, RpFitResult.FAILED
-        return fit_data, RpFitResult.FAILED
+        result = RateComboFitResult(fit=fit_data, result=RpFitResult.FAILED, rp_diff=rp_diff)
+
+        _cache[(context.pokemon_name, fit_data)] = result
+        return result
 
     if current_fit_result == RpFitResult.SUBOPTIMAL:
         # Check the surrounding of the suboptimal result to see if there is a perfect result
         for surrounding in traverse_last_fit_bfs(fit_data, max_radius=3):
             surrounding_fit_result = get_rp_fit_result(
-                remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
+                get_rp_diff(context, reference_rp, computed, surrounding),
                 lax=False
             )
             if surrounding_fit_result != RpFitResult.PERFECT:
@@ -90,7 +103,7 @@ def get_rate_combo_fit_result(
         # Check the surrounding of the perfect result to make sure every other fit is not perfect
         for surrounding in traverse_last_fit_bfs(fit_data, max_radius=2, skip_center=True):
             surrounding_fit_result = get_rp_fit_result(
-                remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
+                get_rp_diff(context, reference_rp, computed, surrounding),
                 lax=False
             )
             if surrounding_fit_result != RpFitResult.PERFECT:
@@ -99,24 +112,27 @@ def get_rate_combo_fit_result(
             perfect_fits.append(surrounding)
 
         if len(perfect_fits) > 1:
-            print_func(
-                f"{initiator} - {pokemon_name:<25} has multiple ({len(perfect_fits)}) perfect fits: "
+            context.print_func(
+                f"{initiator} - {context.pokemon_name:<25} has multiple ({len(perfect_fits)}) perfect fits: "
                 f"{" / ".join(f"[Ing {fit.ing:>6.2%} / Skl {fit.skl:>6.2%}]" for fit in perfect_fits)}"
             )
             current_fit_result = RpFitResult.SUBOPTIMAL
 
     if np.isnan(rp_diff).any():
-        print_func(f"{initiator} - WARNING - RP diff of {pokemon_name} has NaN")
+        context.print_func(f"{initiator} - WARNING - RP diff of {context.pokemon_name} has NaN")
 
-    print_func(
-        f"{initiator} - [{current_fit_result.name}] RP fit of {pokemon_name:<25} found at: "
-        f"Ing {fit_data.ing:>6.2%} / Skl {fit_data.skl:>6.2%}"
-    )
+    if not print_non_regular_result_only:
+        context.print_func(
+            f"{initiator} - [{current_fit_result.name}] RP fit of {context.pokemon_name:<25} found at: "
+            f"Ing {fit_data.ing:>6.2%} / Skl {fit_data.skl:>6.2%}"
+        )
     if current_fit_result == RpFitResult.SUBOPTIMAL:
-        print_func(
-            f"{" " * (len(initiator) + 3)}RP diff: {rp_diff_clean[rp_diff_clean != 0]} "
-            f"({(rp_diff_clean != 0).sum()} / {rp_diff_clean.size} - {pokemon_name})"
+        context.print_func(
+            f"{" " * (len(initiator) + 3)}RP diff: {rp_diff[rp_diff != 0]} "
+            f"({(rp_diff != 0).sum()} / {rp_diff.size} - {context.pokemon_name})"
         )
 
-    _cache[(pokemon_name, fit_data)] = fit_data, current_fit_result
-    return fit_data, current_fit_result
+    result = RateComboFitResult(fit=fit_data, result=current_fit_result, rp_diff=rp_diff)
+
+    _cache[(context.pokemon_name, fit_data)] = result
+    return result

@@ -1,6 +1,7 @@
 from numpy import float64
 from pandas import DataFrame
 
+from . import OptimizerFitContext
 from .fit import get_rate_combo_fit_result
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
@@ -25,21 +26,22 @@ def is_all_last_fit_perfect(
         computed = make_precomputed_columns(grouped)
         reference_rp = grouped["RP"].astype(float64).to_numpy()
 
-        rate_combo, fit_result = get_rate_combo_fit_result(
-            pokemon_name,
-            None,
+        fit_result = get_rate_combo_fit_result(
+            OptimizerFitContext(
+                pokemon_name=pokemon_name,
+                pokemon_data_of_group=grouped,
+                x0=x0,
+                unpack_info=unpack_info,
+                print_func=print,
+            ),
             last_fit_of_pokemon,
             reference_rp,
-            x0,
-            unpack_info,
-            grouped,
             computed,
             initiator="Validate",
-            print_func=print,
         )
 
-        if fit_result != RpFitResult.PERFECT:
-            print(f"Last fit for Pokemon is not perfect - {pokemon_name}: {rate_combo}")
+        if fit_result.result != RpFitResult.PERFECT:
+            print(f"Last fit for Pokemon is not perfect - {pokemon_name}: {fit_result.fit}")
             return False
 
     return True
