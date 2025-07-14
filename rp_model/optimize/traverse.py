@@ -4,17 +4,17 @@ from .const import ING_MAX, ING_MIN, MAX_FIT_RADIUS, SKILL_MAX, SKILL_MIN, TICK_
 from ..type import LastFitData
 
 
-def traverse_at_radius(center: LastFitData, radius_tick: int) -> Generator[LastFitData, None, None]:
-    radius = radius_tick * TICK_INTERVAL
+def traverse_at_radius(center: LastFitData, radius_tick: int, point_gap: float) -> Generator[LastFitData, None, None]:
+    radius = radius_tick * point_gap
 
     for offset_tick in range(-radius_tick + 1, radius_tick + 1):
-        offset = offset_tick * TICK_INTERVAL
+        offset = offset_tick * point_gap
 
         yield LastFitData(ing=center.ing + radius, skl=center.skl + offset)
         yield LastFitData(ing=center.ing - radius, skl=center.skl - offset)
 
     for offset_tick in range(-radius_tick + 1, radius_tick + 1):
-        offset = offset_tick * TICK_INTERVAL
+        offset = offset_tick * point_gap
 
         yield LastFitData(ing=center.ing + offset, skl=center.skl - radius)
         yield LastFitData(ing=center.ing - offset, skl=center.skl + radius)
@@ -23,15 +23,16 @@ def traverse_at_radius(center: LastFitData, radius_tick: int) -> Generator[LastF
 def traverse_last_fit(
     center: LastFitData,
     /,
-    max_radius: int | None = None,
-    skip_center: bool = False
+    max_radius: int = MAX_FIT_RADIUS,
+    skip_center: bool = False,
+    point_gap: float = TICK_INTERVAL,
 ) -> Generator[LastFitData, None, None]:
     def traverser() -> Generator[LastFitData, None, None]:
         if not skip_center:
             yield center
 
-        for radius_tick in range(1, max_radius or MAX_FIT_RADIUS):
-            yield from traverse_at_radius(center, radius_tick)
+        for radius_tick in range(1, max_radius):
+            yield from traverse_at_radius(center, radius_tick, point_gap)
 
     for fit in traverser():
         if ING_MIN <= fit.ing <= ING_MAX and SKILL_MIN <= fit.skl <= SKILL_MAX:
