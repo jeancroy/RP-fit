@@ -12,6 +12,8 @@ from ..enum import RpFitResult
 from ..type import LastFitData
 from ..utils import remove_nan
 
+_cache: dict[tuple[Hashable, LastFitData], tuple[LastFitData, RpFitResult]:] = {}
+
 
 def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> RpFitResult:
     if not rp_diff_clean.any():
@@ -47,6 +49,9 @@ def get_rate_combo_fit_result(
     initiator: Literal["Solve", "Validate"],
     print_func: Callable[[str], None]
 ) -> tuple[LastFitData, RpFitResult]:
+    if result := _cache.get((pokemon_name, centroid)):
+        return result
+
     rp_diff = reference_rp - compute_rp(x0, data, computed, unpack_info, fit=centroid)
     # Clean as in NaNs removed
     # NaN can be caused by various reasons, including:
@@ -62,6 +67,7 @@ def get_rate_combo_fit_result(
                 f"{idx} / {MAX_POSSIBLE_FITS} ({idx / MAX_POSSIBLE_FITS:.2%})"
             )
 
+        _cache[(pokemon_name, centroid)] = centroid, RpFitResult.FAILED
         return centroid, RpFitResult.FAILED
 
     if current_fit_result == RpFitResult.SUBOPTIMAL:
@@ -112,4 +118,5 @@ def get_rate_combo_fit_result(
             f"({(rp_diff_clean != 0).sum()} / {rp_diff_clean.size} - {pokemon_name})"
         )
 
+    _cache[(pokemon_name, centroid)] = centroid, current_fit_result
     return centroid, current_fit_result
