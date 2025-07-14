@@ -17,8 +17,18 @@ def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> R
         return RpFitResult.PERFECT
 
     if rp_diff_clean.min() >= -1 and rp_diff_clean.max() <= 1:
-        # Allow small rounding error (1 per 50 data) due to likely rounding reason
-        return RpFitResult.PERFECT if lax and abs(rp_diff_clean).mean() < 1 / 50 else RpFitResult.SUBOPTIMAL
+        avg = abs(rp_diff_clean).mean()
+
+        # Allow small rounding error (1 per 50 data) likely due to rounding reason
+        if lax and avg < 1 / 50:
+            return RpFitResult.PERFECT
+
+        # If not lax, and the error rate is < 1 per 30 data, count it as suboptimal
+        if avg < 1 / 30:
+            return RpFitResult.SUBOPTIMAL
+
+        # Otherwise, count it as failed
+        return RpFitResult.FAILED
 
     return RpFitResult.FAILED
 
