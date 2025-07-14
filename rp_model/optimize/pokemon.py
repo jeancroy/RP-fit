@@ -3,7 +3,7 @@ from typing import Callable, Hashable
 from numpy import float64
 
 from .fit import get_rate_combo_fit_result
-from .traverse import traverse_last_fit
+from .traverse.bfs import traverse_last_fit_bfs
 from .typedef import OptimizerSingleFitResult, OptimizerSolvedDataEntry
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
@@ -27,8 +27,8 @@ def process_pokemon(
     single_mon_fit_results: set[OptimizerSingleFitResult] = set()
     # Expand 2 layers with each having gaps of 0.03 (3%) for starting from different centroids
     # to make sure that there isn't a duplicated perfect fit
-    for centroid in traverse_last_fit(last_fit_of_pokemon, max_radius=3, point_gap=0.03):
-        for idx, fit_data in enumerate(traverse_last_fit(centroid)):
+    for centroid in traverse_last_fit_bfs(last_fit_of_pokemon, max_radius=3, point_gap=0.03):
+        for idx, fit_data in enumerate(traverse_last_fit_bfs(centroid)):
             actual_rate_combo, fit_result = get_rate_combo_fit_result(
                 pokemon_name,
                 idx,

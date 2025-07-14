@@ -6,7 +6,7 @@ import numpy.typing as npt
 from pandas import DataFrame
 
 from .const import MAX_POSSIBLE_FITS
-from .traverse import traverse_last_fit
+from .traverse.bfs import traverse_last_fit_bfs
 from ..calc import compute_rp
 from ..enum import RpFitResult
 from ..type import LastFitData
@@ -72,7 +72,7 @@ def get_rate_combo_fit_result(
 
     if current_fit_result == RpFitResult.SUBOPTIMAL:
         # Check the surrounding of the suboptimal result to see if there is a perfect result
-        for surrounding in traverse_last_fit(fit_data, max_radius=3):
+        for surrounding in traverse_last_fit_bfs(fit_data, max_radius=3):
             surrounding_fit_result = get_rp_fit_result(
                 remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
                 lax=False
@@ -88,7 +88,7 @@ def get_rate_combo_fit_result(
     if current_fit_result == RpFitResult.PERFECT:
         perfect_fits = [fit_data]
         # Check the surrounding of the perfect result to make sure every other fit is not perfect
-        for surrounding in traverse_last_fit(fit_data, max_radius=2, skip_center=True):
+        for surrounding in traverse_last_fit_bfs(fit_data, max_radius=2, skip_center=True):
             surrounding_fit_result = get_rp_fit_result(
                 remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
                 lax=False
