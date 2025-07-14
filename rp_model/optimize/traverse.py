@@ -1,23 +1,7 @@
-import math
 from typing import Generator
 
+from .const import ING_MAX, ING_MIN, MAX_FIT_RADIUS, SKILL_MAX, SKILL_MIN, TICK_INTERVAL
 from ..type import LastFitData
-
-TICK_INTERVAL = 0.001
-
-SKILL_MIN = 0.001
-SKILL_MAX = 0.170
-
-ING_MIN = 0.05
-ING_MAX = 0.4
-
-MAX_ING_FIT_TICKS = math.ceil((ING_MAX - ING_MIN) / TICK_INTERVAL)
-
-MAX_SKL_FIT_TICKS = math.ceil((SKILL_MAX - SKILL_MIN) / TICK_INTERVAL)
-
-MAX_POSSIBLE_FITS = (MAX_ING_FIT_TICKS + 1) * (MAX_SKL_FIT_TICKS + 1)
-
-MAX_FIT_RADIUS = max(MAX_ING_FIT_TICKS, MAX_SKL_FIT_TICKS)
 
 
 def traverse_at_radius(center: LastFitData, radius_tick: int) -> Generator[LastFitData, None, None]:

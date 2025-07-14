@@ -5,7 +5,8 @@ import numpy as np
 import numpy.typing as npt
 from pandas import DataFrame
 
-from .traverse import MAX_POSSIBLE_FITS, traverse_last_fit
+from .const import MAX_POSSIBLE_FITS
+from .traverse import traverse_last_fit
 from ..calc import compute_rp
 from ..enum import RpFitResult
 from ..type import LastFitData
