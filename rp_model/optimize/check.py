@@ -1,103 +1,45 @@
-from types import SimpleNamespace
-from typing import Literal
-
-import numpy as np
-import numpy.typing as npt
+from numpy import float64
 from pandas import DataFrame
 
-from .traverse import MAX_POSSIBLE_FITS, traverse_last_fit
-from ..calc import compute_rp
+from .fit import get_rate_combo_fit_result
+from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
+from ..env import is_pokemon_included_for_rp_model
 from ..type import LastFitData
-from ..utils import remove_nan
 
 
-def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> RpFitResult:
-    if not rp_diff_clean.any():
-        return RpFitResult.PERFECT
-
-    if rp_diff_clean.min() >= -1 and rp_diff_clean.max() <= 1:
-        # Allow small rounding error (1 per 50 data) due to likely rounding reason
-        return RpFitResult.PERFECT if lax and abs(rp_diff_clean).mean() < 1 / 50 else RpFitResult.SUBOPTIMAL
-
-    return RpFitResult.FAILED
-
-
-def get_rate_combo_fit_result(
-    pokemon_name: str,
-    idx: int | None,
-    centroid: LastFitData,
-    reference_rp: npt.NDArray[np.float64],
-    x0,
-    unpack_info,
+def is_all_last_fit_perfect(
     data: DataFrame,
-    computed: SimpleNamespace,
-    /,
-    initiator: Literal["Solve", "Validate"]
-) -> tuple[LastFitData, RpFitResult]:
-    rp_diff = reference_rp - compute_rp(x0, data, computed, unpack_info, fit=centroid)
-    # Clean as in NaNs removed
-    # NaN can be caused by various reasons, including:
-    # - New Pokémon max level released with outdated ingredient growth data
-    rp_diff_clean = remove_nan(rp_diff)
+    last_fit: dict[str, LastFitData],
+    x0,
+    unpack_info
+) -> bool:
+    for pokemon_name, grouped in data.groupby("Pokemon"):
+        pokemon_name: str
 
-    current_fit_result = get_rp_fit_result(rp_diff_clean, lax=True)
+        if not is_pokemon_included_for_rp_model(pokemon_name):
+            continue
 
-    if not current_fit_result.is_possible_fit:
-        if idx is not None and idx % 1000 == 0:
-            print(
-                f"{initiator} - Finding rate combo of {pokemon_name:<25} - "
-                f"{idx} / {MAX_POSSIBLE_FITS} ({idx / MAX_POSSIBLE_FITS:.2%})"
-            )
+        last_fit_of_pokemon = last_fit.get(pokemon_name, LastFitData(ing=0.2, skl=0.02))
 
-        return centroid, RpFitResult.FAILED
+        computed = make_precomputed_columns(grouped)
+        reference_rp = grouped["RP"].astype(float64).to_numpy()
 
-    if current_fit_result == RpFitResult.SUBOPTIMAL:
-        # Check the surrounding of the suboptimal result to see if there is a perfect result
-        for surrounding in traverse_last_fit(centroid, max_radius=3):
-            surrounding_fit_result = get_rp_fit_result(
-                remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
-                lax=False
-            )
-            if surrounding_fit_result != RpFitResult.PERFECT:
-                continue
-
-            current_fit_result = surrounding_fit_result
-            centroid = surrounding
-            break
-
-    # Ensure that there are no multiple perfect results
-    if current_fit_result == RpFitResult.PERFECT:
-        perfect_fits = [centroid]
-        # Check the surrounding of the perfect result to make sure every other fit is not perfect
-        for surrounding in traverse_last_fit(centroid, max_radius=2, skip_center=True):
-            surrounding_fit_result = get_rp_fit_result(
-                remove_nan(reference_rp - compute_rp(x0, data, computed, unpack_info, fit=surrounding)),
-                lax=False
-            )
-            if surrounding_fit_result != RpFitResult.PERFECT:
-                continue
-
-            perfect_fits.append(surrounding)
-
-        if len(perfect_fits) > 1:
-            print(
-                f"{initiator} - {pokemon_name:<25} has multiple ({len(perfect_fits)}) perfect fits: "
-                f"{" / ".join(f"[Ing {fit.ing:>6.2%} / Skl {fit.skl:>6.2%}]" for fit in perfect_fits)}"
-            )
-            current_fit_result = RpFitResult.SUBOPTIMAL
-
-    if np.isnan(rp_diff).any():
-        print(f"{initiator} - WARNING - RP diff of {pokemon_name} has NaN")
-
-    print(
-        f"{initiator} - [{current_fit_result.name}] RP fit of {pokemon_name:<25} found at: "
-        f"Ing {centroid.ing:>6.2%} / Skl {centroid.skl:>6.2%}"
-    )
-    if current_fit_result == RpFitResult.SUBOPTIMAL:
-        print(
-            f"{" " * (len(initiator) + 3)}RP diff: {rp_diff_clean[rp_diff_clean != 0]} "
-            f"({(rp_diff_clean != 0).sum()} / {rp_diff_clean.size})"
+        rate_combo, fit_result = get_rate_combo_fit_result(
+            pokemon_name,
+            None,
+            last_fit_of_pokemon,
+            reference_rp,
+            x0,
+            unpack_info,
+            grouped,
+            computed,
+            initiator="Validate",
+            print_func=print,
         )
 
-    return centroid, current_fit_result
+        if fit_result != RpFitResult.PERFECT:
+            print(f"Last fit for Pokemon is not perfect - {pokemon_name}: {rate_combo}")
+            return False
+
+    return True

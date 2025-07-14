@@ -6,7 +6,8 @@ from .rp_model.calc import (
     FitOptions, download_data, game, make_initial_guess, refresh_pokedex,
 )
 from .rp_model.files import from_files_directory
-from .rp_model.optimize import run_optimizer, is_all_last_fit_perfect
+from .rp_model.optimize import run_optimizer
+from .rp_model.optimize.check import is_all_last_fit_perfect
 from .rp_model.utils import DataStore, pack, table
 
 
