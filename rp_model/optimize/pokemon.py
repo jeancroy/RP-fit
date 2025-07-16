@@ -23,6 +23,8 @@ def get_solution_of_pokemon(
     ))
     solutions_formatted = [f"{solution.fit} ({solution.result.name[:1]})" for solution in solutions_found]
     print_func(f"{pokemon_name:>25} - {len(solutions_found)} solutions found - {" / ".join(solutions_formatted)}")
+    if len(solutions_found) > 1:
+        print_func(f"WARNING - Multiple solutions found for [{pokemon_name}]")
 
     try:
         fit_result_to_use_for_mon = sorted(single_mon_fit_results, key=lambda x: x.result.value, reverse=True)[0]
@@ -35,12 +37,9 @@ def get_solution_of_pokemon(
                 f"Ingredient: {imperfect.fit.ing:>6.2%} / Skill: {imperfect.fit.skl:>6.2%}"
             )
 
-        if len(single_mon_fit_results) > 1:
-            print_func(f"WARNING - Multiple solutions found for [{pokemon_name}]")
-
         return OptimizerSolvedDataEntry(
             fit=fit_result_to_use_for_mon.fit,
-            result=RpFitResult.SUBOPTIMAL if len(single_mon_fit_results) > 1 else fit_result_to_use_for_mon.result,
+            result=RpFitResult.SUBOPTIMAL if len(solutions_found) > 1 else fit_result_to_use_for_mon.result,
             pokemon=pokemon_name,
         )
     except IndexError:
@@ -54,16 +53,17 @@ def get_solution_of_pokemon(
 
 
 def process_pokemon(
-    last_fit_dict: dict[Hashable, LastFitData],
+    last_fit: LastFitData | None,
     context: OptimizerFitContext,
 ) -> OptimizerSolvedDataEntry:
-    last_fit_of_pokemon = last_fit_dict.get(context.pokemon_name, LastFitData.default())
+    last_fit_of_pokemon = last_fit or LastFitData.default()
 
     computed = make_precomputed_columns(context.pokemon_data_of_group)
     reference_rp = context.pokemon_data_of_group["RP"].astype(float64).to_numpy()
 
     single_mon_fit_results: set[OptimizerSingleFitResult] = set()
 
+    # DFS with multiple starting points spawned by BFS
     for centroid in traverse_last_fit_bfs(last_fit_of_pokemon, point_gap=0.015):
         single_fit_result = traverse_last_fit_dfs(centroid, context, reference_rp, computed)
         single_mon_fit_results.add(single_fit_result)
@@ -76,6 +76,7 @@ def process_pokemon(
         single_mon_fit_results = {single_fit_result}
         break
 
+    # Search with BFS, only if DFS not finding anything
     if not single_mon_fit_results:
         context.print_func(
             f"{context.pokemon_name:<25} - "

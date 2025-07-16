@@ -3,7 +3,6 @@ from ..files import from_files_directory
 
 class FitOptions:
     data_file = from_files_directory("data/rp-data.pickle")
-    result_file = from_files_directory("results/least-squares-fit.pickle")
     boostrap_file = from_files_directory("results/bootstrap-fit.pickle")
 
     rp_file_id = "1kBrPl0pdAO8gjOf_NrTgAPseFtqQA27fdfEbMBBeAhs"
@@ -16,3 +15,7 @@ class FitOptions:
         "pokedex": "513440248",
         "main_skill": "1395455629",
     }
+
+    @staticmethod
+    def get_pokemon_result_file(pokemon_name: str):
+        return from_files_directory(f"results/pokemon/{pokemon_name}.pickle")

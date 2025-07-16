@@ -2,6 +2,7 @@ import os
 import pickle
 import re
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 import requests
@@ -17,7 +18,9 @@ def download_sheet(file_id, sheet_id):
 # Pickle file management
 
 def save(filepath, data):
-    with open(filepath, "wb") as handle:
+    Path(str(Path(filepath).parent)).mkdir(parents=True, exist_ok=True)
+
+    with open(filepath, "wb+") as handle:
         pickle.dump(data, handle)
 
 
