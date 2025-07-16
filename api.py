@@ -5,7 +5,6 @@ from pandas import DataFrame
 from .rp_model.calc import (
     FitOptions, download_data, game, make_initial_guess, refresh_pokedex,
 )
-from .rp_model.files import from_files_directory
 from .rp_model.optimize import run_optimizer
 from .rp_model.optimize.check import is_all_last_fit_perfect
 from .rp_model.utils import DataStore, pack, table
@@ -57,18 +56,7 @@ def update_fit_cached() -> RpModelFitResult:
     return RpModelFitResult(raw_data=data, fit_result=result)
 
 
-def get_rp_model_result(result_file: str) -> RpModelFitResult:
-    """
-    The only method that is called by the scraper.
-
-    Example ``file_pickle_pattern``: ``"results/least-squares-fit.pickle"``.
-
-    :param result_file: The path pattern to the result pickle file.
-    :return: The resulting ``pd.DataFrame``.
-    """
-
-    FitOptions.result_file = from_files_directory(result_file)
-
+def get_rp_model_result() -> RpModelFitResult:
     return update_fit_cached()
 
 
