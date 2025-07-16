@@ -97,7 +97,16 @@ def update_fit_cached() -> RpModelFitResult:
 
     print_final_results(solved)
 
-    solution = DataFrame.from_records([asdict(item) for _, item in solved], index="pokemon")
+    solution_records = []
+    for _, item in solved:
+        record = asdict(item)
+        record.pop("fit")
+
+        record["ing"] = item.fit.ing
+        record["skl"] = item.fit.skl
+        solution_records.append(record)
+
+    solution = DataFrame.from_records(solution_records, index="pokemon")
     result = (DataFrame({"pokemon": game.data.pokedex["Pokemon"], "pokemonId": game.data.pokedex["Pokemon ID"]})
               .join(solution, on="pokemon")
               .rename(columns={"ing": "ingredientSplit", "skl": "skillValue", "result": "fitResult"}))
