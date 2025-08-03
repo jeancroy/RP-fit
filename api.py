@@ -1,3 +1,5 @@
+import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 
 from pandas import DataFrame
@@ -85,6 +87,23 @@ def use_or_refresh_solved_pokemon(
     return False, solved_data
 
 
+def process_pokemon_batch(
+    pokemon_batch: list[tuple[str, DataFrame]],
+    last_fit: dict,
+    x0,
+    unpack_info
+) -> list[tuple[bool, OptimizerSolvedDataEntry]]:
+    results = []
+    for name, group in pokemon_batch:
+        if not is_pokemon_included_for_rp_model(name):
+            continue
+
+        result = use_or_refresh_solved_pokemon(name, group, last_fit.get(name), x0, unpack_info)
+        results.append(result)
+
+    return results
+
+
 def update_fit_cached() -> RpModelFitResult:
     refresh_pokedex()
 
@@ -97,12 +116,30 @@ def update_fit_cached() -> RpModelFitResult:
     initial_guess, range_info, last_fit = make_initial_guess(include_last_fit_dict=True)
     x0, unpack_info = pack(initial_guess, range_info)
 
-    solved: list[tuple[bool, OptimizerSolvedDataEntry]] = []
-    for name, group in data.groupby("Pokemon"):
-        if not is_pokemon_included_for_rp_model(name):
-            continue
+    # Prepare Pokemon groups for parallel processing
+    pokemon_groups = [(name, df_group) for name, df_group in data.groupby("Pokemon")]
 
-        solved.append(use_or_refresh_solved_pokemon(name, group, last_fit.get(name), x0, unpack_info))
+    num_workers = min(os.cpu_count() or 1, len(pokemon_groups))
+    batch_size = max(1, len(pokemon_groups) // num_workers)
+
+    pokemon_batches = []
+    for i in range(0, len(pokemon_groups), batch_size):
+        batch = pokemon_groups[i:i + batch_size]
+        pokemon_batches.append(batch)
+
+    solved: list[tuple[bool, OptimizerSolvedDataEntry]] = []
+
+    # Use ProcessPoolExecutor for parallel processing
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        future_to_batch = {
+            executor.submit(process_pokemon_batch, batch, last_fit, x0, unpack_info): batch
+            for batch in pokemon_batches
+        }
+
+        # Collect results as they complete
+        for future in as_completed(future_to_batch):
+            batch_results = future.result()
+            solved.extend(batch_results)
 
     print_final_results(solved)
 
