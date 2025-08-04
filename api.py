@@ -58,7 +58,7 @@ def use_or_refresh_solved_pokemon(
 ) -> tuple[bool, OptimizerSolvedDataEntry]:
     cache_path = FitOptions.get_pokemon_result_file(pokemon_name)
 
-    store = DataStore(cache_path).with_dependency_on(data_of_pokemon).try_read_and_validate()
+    store = DataStore(cache_path).with_dependency_on(data_of_pokemon, last_fit).try_read_and_validate()
 
     is_valid_store = store.is_valid()
     is_last_fit_passed = is_last_fit_perfect(pokemon_name, data_of_pokemon, last_fit, x0, unpack_info)
