@@ -61,7 +61,8 @@ def use_or_refresh_solved_pokemon(
     store = (
         DataStore(cache_path)
         .with_dependency_on(
-            data_of_pokemon.sort_values("ID").reset_index(drop=True),
+            # Cache by sorted IDs and last fit result
+            sorted(data_of_pokemon["ID"]),
             last_fit
         )
         .try_read_and_validate()
