@@ -26,7 +26,10 @@ class RpModelFitResult:
 def print_final_result_entry(entry: tuple[bool, OptimizerSolvedDataEntry]):
     is_cached, solution = entry
 
-    print(f"[{"C" if is_cached else "N"}] {solution.pokemon:>25} - {solution.fit} ({solution.result.name})")
+    print(
+        f"[{"C" if is_cached else "N"}] {solution.pokemon:>25} ({solution.data_count:>3}) - "
+        f"{solution.fit} ({solution.result.name})"
+    )
 
 
 def print_final_results(entries: list[tuple[bool, OptimizerSolvedDataEntry]]):

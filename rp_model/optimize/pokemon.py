@@ -1,5 +1,3 @@
-from typing import Callable, Hashable
-
 from numpy import float64
 
 from .fit import get_rate_combo_fit_result
@@ -13,10 +11,13 @@ from ..type import LastFitData
 
 
 def get_solution_of_pokemon(
-    pokemon_name: Hashable,
+    context: OptimizerFitContext,
     single_mon_fit_results: set[OptimizerSingleFitResult],
-    print_func: Callable[[str], None],
 ):
+    # Variable use shortcut
+    print_func = context.print_func
+    pokemon_name = context.pokemon_name
+
     solutions_found: list[OptimizerSingleFitResult] = list(filter(
         lambda x: x.result.is_possible_fit,
         single_mon_fit_results
@@ -41,6 +42,7 @@ def get_solution_of_pokemon(
             fit=fit_result_to_use_for_mon.fit,
             result=RpFitResult.SUBOPTIMAL if len(solutions_found) > 1 else fit_result_to_use_for_mon.result,
             pokemon=pokemon_name,
+            data_count=context.pokemon_data_count,
         )
     except IndexError:
         print_func(f"WARNING - No solution found for [{pokemon_name}], default is used")
@@ -49,6 +51,7 @@ def get_solution_of_pokemon(
             fit=LastFitData.default(),
             result=RpFitResult.FAILED,
             pokemon=pokemon_name,
+            data_count=context.pokemon_data_count,
         )
 
 
@@ -101,4 +104,4 @@ def process_pokemon(
             single_mon_fit_results = {single_fit_result}
             break
 
-    return get_solution_of_pokemon(context.pokemon_name, single_mon_fit_results, context.print_func)
+    return get_solution_of_pokemon(context, single_mon_fit_results)

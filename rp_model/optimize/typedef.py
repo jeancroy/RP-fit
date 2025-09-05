@@ -69,6 +69,7 @@ class RateComboFitResult(OptimizerSingleFitResult):
 @dataclass
 class OptimizerSolvedDataEntry(OptimizerSingleFitResult):
     pokemon: Hashable
+    data_count: int
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, OptimizerSolvedDataEntry):
@@ -87,3 +88,7 @@ class OptimizerFitContext:
     pokemon_name: Hashable
     pokemon_data_of_group: DataFrame
     print_func: Callable[[str], None]
+
+    @property
+    def pokemon_data_count(self):
+        return self.pokemon_data_of_group.shape[0]
