@@ -29,9 +29,9 @@ def in_notebook():
 
 def list_members(obj):
     if isinstance(obj, dict):
-        return list(obj.items())
+        return sorted(obj.items())
 
-    return [
+    return sorted(
         (a, getattr(obj, a)) for a in dir(obj)
         if not a.startswith("_") and not callable(getattr(obj, a))
-    ]
+    )

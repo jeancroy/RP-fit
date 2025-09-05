@@ -1,6 +1,7 @@
-from datetime import timedelta, datetime
-from .hash import digest
+from datetime import datetime, timedelta
+
 from .files import save, try_load
+from .hash import digest
 
 
 class DataStore:
@@ -42,17 +43,18 @@ class DataStore:
     def try_read_and_validate(self):
         self._data = None
 
-        conditional_data = try_load(self._path)
-        if conditional_data is None or not isinstance(conditional_data, DataStore):
-            return self
-        if not conditional_data.validate_against(self._dependency_hash, self._max_age):
+        maybe_data = try_load(self._path)
+        if maybe_data is None or not isinstance(maybe_data, DataStore):
             return self
 
-        self._data = conditional_data._data
+        if not maybe_data.is_valid_by_hash(self._dependency_hash, self._max_age):
+            return self
+
+        self._data = maybe_data._data
 
         return self
 
-    def validate_against(self, dependency_hash=None, max_age=None):
+    def is_valid_by_hash(self, dependency_hash=None, max_age=None):
         if self._data is None:
             return False
 
@@ -68,6 +70,3 @@ class DataStore:
                 return False
 
         return True
-
-
-
