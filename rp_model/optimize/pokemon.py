@@ -76,8 +76,8 @@ def process_pokemon(
         single_mon_fit_results = {single_fit_result}
         break
 
-    # Search with BFS, only if DFS not finding anything
-    if not single_mon_fit_results:
+    # Search with BFS, only if DFS not finding anything or no perfect result
+    if not any(result.result == RpFitResult.PERFECT for result in single_mon_fit_results):
         context.print_func(
             f"{context.pokemon_name:<25} - "
             f"DFS not finding any solution, switch to BFS... (Global: {RP_MODEL_IS_GLOBAL_CHECK})"
