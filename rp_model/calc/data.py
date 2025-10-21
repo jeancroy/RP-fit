@@ -18,6 +18,7 @@ def download_data():
     ]
 
     # Download all sheets in parallel
+    print("Downloading RP sheet data...")
     with ThreadPoolExecutor(max_workers=4) as executor:
         results = list(executor.map(
             lambda target_sheet_id: download_sheet(FitOptions.rp_file_id, target_sheet_id),
@@ -72,6 +73,7 @@ def download_data():
 
 
 def refresh_pokedex():
+    print("Refreshing pokedex...")
     pokedex = download_sheet(FitOptions.rp_file_id, FitOptions.rp_sheet_ids["pokedex"])
 
     pokedex = pokedex.fillna(0)
