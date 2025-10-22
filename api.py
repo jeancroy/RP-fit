@@ -74,11 +74,11 @@ def use_or_refresh_solved_pokemon(
 
     if not is_last_fit_passed:
         if is_valid_store:
-            print(f"[{pokemon_name:25}] No data update, but the last fit was not perfect")
+            print(f"{pokemon_name:>25} - No data update, but the last fit was not perfect")
         else:
-            print(f"[{pokemon_name:25}] Recalculating, data updated while last fit failed")
+            print(f"{pokemon_name:>25} - Recalculating, data updated while last fit failed")
 
-    if is_valid_store or is_last_fit_passed:
+    if is_valid_store:
         return True, store.data()
 
     solved_data = process_pokemon(
