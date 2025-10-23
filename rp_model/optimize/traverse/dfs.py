@@ -5,7 +5,7 @@ import numpy as np
 from numpy import typing as npt
 
 from ..fit import get_rate_combo_fit_result
-from ..typedef import OptimizerFitContext, OptimizerSingleFitResult, RateComboFitResult
+from ..typedef import OptimizerFitContext, RateComboFitResult
 from ...const import TICK_INTERVAL
 from ...type import LastFitData
 
@@ -26,7 +26,7 @@ def traverse_last_fit_dfs(
     context: OptimizerFitContext,
     reference_rp: npt.NDArray[np.float64],
     computed: SimpleNamespace,
-) -> OptimizerSingleFitResult:
+) -> RateComboFitResult:
     visited = set()
 
     current_fit: RateComboFitResult = get_rate_combo_fit_result(

@@ -3,7 +3,7 @@ from numpy import float64
 from .fit import get_rate_combo_fit_result
 from .traverse.bfs import traverse_last_fit_bfs
 from .traverse.dfs import traverse_last_fit_dfs
-from .typedef import OptimizerFitContext, OptimizerSingleFitResult, OptimizerSolvedDataEntry
+from .typedef import OptimizerFitContext, OptimizerSingleFitResult, OptimizerSolvedDataEntry, RateComboFitResult
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
 from ..env import RP_MODEL_IS_GLOBAL_CHECK
@@ -12,7 +12,7 @@ from ..type import LastFitData
 
 def get_solution_of_pokemon(
     context: OptimizerFitContext,
-    single_mon_fit_results: set[OptimizerSingleFitResult],
+    single_mon_fit_results: set[RateComboFitResult],
 ):
     # Variable use shortcut
     print_func = context.print_func
@@ -28,13 +28,13 @@ def get_solution_of_pokemon(
         print_func(f"WARNING - Multiple solutions found for [{pokemon_name}]")
 
     try:
-        fit_result_to_use_for_mon = sorted(single_mon_fit_results, key=lambda x: x.result.value, reverse=True)[0]
+        fit_result_to_use_for_mon = sorted(single_mon_fit_results, key=lambda x: x.loss)[0]
 
         if fit_result_to_use_for_mon.result != RpFitResult.PERFECT:
             imperfect = fit_result_to_use_for_mon
 
             print_func(
-                f"WARNING - Imperfect solution used for [{pokemon_name}] - "
+                f"WARNING - Imperfect solution used for [{pokemon_name}] with loss {imperfect.loss:.2f} - "
                 f"Ingredient: {imperfect.fit.ing:>6.2%} / Skill: {imperfect.fit.skl:>6.2%}"
             )
 
@@ -64,7 +64,7 @@ def process_pokemon(
     computed = make_precomputed_columns(context.pokemon_data_of_group)
     reference_rp = context.pokemon_data_of_group["RP"].astype(float64).to_numpy()
 
-    single_mon_fit_results: set[OptimizerSingleFitResult] = set()
+    single_mon_fit_results: set[RateComboFitResult] = set()
 
     # DFS with multiple starting points spawned by BFS
     for centroid in traverse_last_fit_bfs(last_fit_of_pokemon, point_gap=0.015):
