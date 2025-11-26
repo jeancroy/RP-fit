@@ -4,6 +4,7 @@ from .fit import get_rate_combo_fit_result
 from .traverse.bfs import traverse_last_fit_bfs
 from .traverse.dfs import traverse_last_fit_dfs
 from .typedef import OptimizerFitContext, OptimizerSingleFitResult, OptimizerSolvedDataEntry, RateComboFitResult
+from .validate import print_imperfect_fit_details
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
 from ..env import RP_MODEL_IS_GLOBAL_CHECK
@@ -63,6 +64,24 @@ def process_pokemon(
 
     computed = make_precomputed_columns(context.pokemon_data_of_group)
     reference_rp = context.pokemon_data_of_group["RP"].astype(float64).to_numpy()
+
+    # Initial validation using the last fit; if not perfect, print mismatch details once
+    validation_result = get_rate_combo_fit_result(
+        context,
+        last_fit_of_pokemon,
+        reference_rp,
+        computed,
+        initiator="Validate",
+        print_non_regular_result_only=True,
+    )
+    if validation_result.result != RpFitResult.PERFECT:
+        print_imperfect_fit_details(
+            context,
+            validation_result.fit,
+            reference_rp,
+            computed,
+            initiator="Imperfect",
+        )
 
     single_mon_fit_results: set[RateComboFitResult] = set()
 

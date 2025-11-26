@@ -53,18 +53,22 @@ def compute_rp(variables, data, computed, unpack_info, /, fit: LastFitData | Non
 def final_ingredients_value(model):
     ing1_amount = 1.0 + model.computed.has_class["Ingredients"] + model.computed.has_class["All"]
     ing2_amount = model.computed.ing2_amount.astype(int)
+    ing3_amount = model.computed.ing3_amount.astype(int)
 
     ing1_power = model.computed.ing1_power_base
     ing2_power = model.computed.ing2_power_base
+    ing3_power = model.computed.ing3_power_base
 
     # Equal weigh of 1 has been confirmed
     ing1_weigh = 1.0
     ing2_weigh = (model.computed.ing2_amount.astype(int) > 0)
+    ing3_weigh = (model.computed.ing3_amount.astype(int) > 0)
 
     # weighted average of the N ingredients and their amount
     ing_value = ing1_amount * ing1_power
     ing_value += ing2_amount * ing2_power
-    ing_value /= (ing1_weigh + ing2_weigh)
+    ing_value += ing3_amount * ing3_power
+    ing_value /= (ing1_weigh + ing2_weigh + ing3_weigh)
 
     # flooring
     ing_value = np.floor(ing_value)
@@ -247,6 +251,10 @@ def make_precomputed_columns(data):
     # Ing2
     computed.ing2_power_base = data["Ing2P"].to_numpy()
     computed.ing2_amount = data["Amnt"].to_numpy()
+
+    # Ing3
+    computed.ing3_power_base = data["Ing3P"].fillna(0).to_numpy()
+    computed.ing3_amount = data["Amnt3"].fillna(0).to_numpy()
 
     # Main skill and level
     computed.skill_value_at_level = data["SklVal"].to_numpy()

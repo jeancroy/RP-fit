@@ -53,6 +53,11 @@ def download_data():
     df.loc[df["Level"] < 30, "Ing2P"] = 0.0
     df.loc[df["Level"] < 30, "Ingredient 2"] = ""
 
+    # data below 60 we clear 3rd ingredient
+    df.loc[df["Level"] < 60, "Amnt3"] = 0.0
+    df.loc[df["Level"] < 60, "Ing3P"] = 0.0
+    df.loc[df["Level"] < 60, "Ingredient 3"] = ""
+
     # data below 50 we clear 3rd skill.
     # data below 25 we clear 2nd skill.
     # data below 10 we clear the 1st.

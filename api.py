@@ -119,9 +119,6 @@ def update_fit_cached() -> RpModelFitResult:
     data = download_data()
     data.to_pickle(FitOptions.data_file)
 
-    # `compute_rp()` not supporting 3rd ingredient for now, therefore skipping mons with level >= 60
-    data = data[data["Level"] < 60]
-
     initial_guess, range_info, last_fit = make_initial_guess(include_last_fit_dict=True)
     x0, unpack_info = pack(initial_guess, range_info)
 
