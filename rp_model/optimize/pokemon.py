@@ -6,6 +6,7 @@ from .traverse.dfs import traverse_last_fit_dfs
 from .typedef import OptimizerFitContext, OptimizerSingleFitResult, OptimizerSolvedDataEntry, RateComboFitResult
 from .validate import print_imperfect_fit_details
 from ..calc import make_precomputed_columns
+from ..const import MAX_POSSIBLE_FITS
 from ..enum import RpFitResult
 from ..env import RP_MODEL_IS_GLOBAL_CHECK
 from ..type import LastFitData
@@ -56,6 +57,78 @@ def get_solution_of_pokemon(
         )
 
 
+def process_pokemon_global_mode(
+    context: OptimizerFitContext,
+    last_fit_of_pokemon: LastFitData,
+    reference_rp,
+    computed,
+) -> set[RateComboFitResult]:
+    """Global check: BFS only with minimum gap (TICK_INTERVAL), no DFS."""
+    single_mon_fit_results: set[RateComboFitResult] = set()
+
+    for idx, fit_data in enumerate(traverse_last_fit_bfs(last_fit_of_pokemon)):
+        single_fit_result = get_rate_combo_fit_result(
+            context,
+            fit_data,
+            reference_rp,
+            computed,
+            initiator="Global",
+        )
+        single_mon_fit_results.add(single_fit_result)
+
+        if idx % 5000 == 0:
+            context.print_func(
+                f"Global - Finding rate combo of {context.pokemon_name:<25} - "
+                f"{idx} / {MAX_POSSIBLE_FITS} ({idx / MAX_POSSIBLE_FITS:.2%})"
+            )
+
+    return single_mon_fit_results
+
+
+def process_pokemon_normal_mode(
+    context: OptimizerFitContext,
+    last_fit_of_pokemon: LastFitData,
+    reference_rp,
+    computed,
+    gap: float = 0.015,
+) -> set[RateComboFitResult]:
+    """Normal mode: BFS with a set gap to get starting points, then DFS from each."""
+    single_mon_fit_results: set[RateComboFitResult] = set()
+
+    for centroid in traverse_last_fit_bfs(last_fit_of_pokemon, point_gap=gap):
+        single_fit_result = traverse_last_fit_dfs(centroid, context, reference_rp, computed)
+        single_mon_fit_results.add(single_fit_result)
+
+        if single_fit_result.result == RpFitResult.PERFECT:
+            # Got a perfect result, only store it and break the loop
+            single_mon_fit_results = {single_fit_result}
+            break
+
+    # Fallback to BFS if DFS didn't find a perfect result
+    if not any(result.result == RpFitResult.PERFECT for result in single_mon_fit_results):
+        context.print_func(
+            f"{context.pokemon_name:<25} - "
+            f"DFS not finding any solution, switch to BFS..."
+        )
+        for idx, fit_data in enumerate(traverse_last_fit_bfs(last_fit_of_pokemon)):
+            single_fit_result = get_rate_combo_fit_result(
+                context,
+                fit_data,
+                reference_rp,
+                computed,
+                initiator="Solve",
+                idx=idx,
+            )
+
+            single_mon_fit_results.add(single_fit_result)
+            if single_fit_result.result == RpFitResult.PERFECT:
+                # Got a perfect result, only store it and break the loop
+                single_mon_fit_results = {single_fit_result}
+                break
+
+    return single_mon_fit_results
+
+
 def process_pokemon(
     last_fit: LastFitData | None,
     context: OptimizerFitContext,
@@ -83,44 +156,9 @@ def process_pokemon(
             initiator="Imperfect",
         )
 
-    single_mon_fit_results: set[RateComboFitResult] = set()
-
-    # DFS with multiple starting points spawned by BFS
-    for centroid in traverse_last_fit_bfs(last_fit_of_pokemon, point_gap=0.015):
-        single_fit_result = traverse_last_fit_dfs(centroid, context, reference_rp, computed)
-        single_mon_fit_results.add(single_fit_result)
-
-        if RP_MODEL_IS_GLOBAL_CHECK or single_fit_result.result != RpFitResult.PERFECT:
-            # Keep recording fits if the result is not failed or is checking globally
-            continue
-
-        # Not global check OR Got a single perfect result, only store it and break the loop
-        single_mon_fit_results = {single_fit_result}
-        break
-
-    # Search with BFS, only if DFS not finding anything or no perfect result
-    if not any(result.result == RpFitResult.PERFECT for result in single_mon_fit_results):
-        context.print_func(
-            f"{context.pokemon_name:<25} - "
-            f"DFS not finding any solution, switch to BFS... (Global: {RP_MODEL_IS_GLOBAL_CHECK})"
-        )
-        for idx, fit_data in enumerate(traverse_last_fit_bfs(last_fit_of_pokemon)):
-            single_fit_result = get_rate_combo_fit_result(
-                context,
-                fit_data,
-                reference_rp,
-                computed,
-                initiator="Solve",
-                idx=idx,
-            )
-
-            single_mon_fit_results.add(single_fit_result)
-            if RP_MODEL_IS_GLOBAL_CHECK or single_fit_result.result != RpFitResult.PERFECT:
-                # Keep recording fits if the result is not failed or is checking globally
-                continue
-
-            # Not global check OR Got a single perfect result, only store it and break the loop
-            single_mon_fit_results = {single_fit_result}
-            break
+    if RP_MODEL_IS_GLOBAL_CHECK:
+        single_mon_fit_results = process_pokemon_global_mode(context, last_fit_of_pokemon, reference_rp, computed)
+    else:
+        single_mon_fit_results = process_pokemon_normal_mode(context, last_fit_of_pokemon, reference_rp, computed)
 
     return get_solution_of_pokemon(context, single_mon_fit_results)

@@ -8,7 +8,7 @@ from .rp_model.calc import (
     FitOptions, download_data, game, make_initial_guess, refresh_pokedex,
 )
 from .rp_model.enum import RpFitResult
-from .rp_model.env import is_pokemon_included_for_rp_model
+from .rp_model.env import RP_MODEL_IS_GLOBAL_CHECK, is_pokemon_included_for_rp_model
 from .rp_model.optimize.check import is_last_fit_perfect
 from .rp_model.optimize.pokemon import process_pokemon
 from .rp_model.optimize.typedef import OptimizerFitContext, OptimizerSolvedDataEntry
@@ -78,7 +78,7 @@ def use_or_refresh_solved_pokemon(
         else:
             print(f"{pokemon_name:>25} - Recalculating, data updated while last fit failed")
 
-    if is_valid_store:
+    if is_valid_store and not RP_MODEL_IS_GLOBAL_CHECK:
         return True, store.data()
 
     solved_data = process_pokemon(

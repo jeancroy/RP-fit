@@ -60,7 +60,7 @@ def get_rate_combo_fit_result(
     reference_rp: npt.NDArray[np.float64],
     computed: SimpleNamespace,
     /,
-    initiator: Literal["Solve", "Validate"],
+    initiator: Literal["Solve", "Validate", "Global"],
     idx: int | None = None,
     print_non_regular_result_only: bool = False,
 ) -> RateComboFitResult:
