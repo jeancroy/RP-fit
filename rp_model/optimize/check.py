@@ -6,6 +6,7 @@ from .typedef import OptimizerFitContext
 from ..calc import make_precomputed_columns
 from ..enum import RpFitResult
 from ..type import LastFitData
+from ..utils.thread_safe_print import thread_safe_print
 
 
 def is_last_fit_perfect(
@@ -26,7 +27,7 @@ def is_last_fit_perfect(
             pokemon_data_of_group=data_of_pokemon,
             x0=x0,
             unpack_info=unpack_info,
-            print_func=print,
+            print_func=thread_safe_print,
         ),
         last_fit_of_pokemon,
         reference_rp,
@@ -35,7 +36,7 @@ def is_last_fit_perfect(
     )
 
     if fit_result.result != RpFitResult.PERFECT:
-        print(f"Last fit for Pokemon is not perfect - {pokemon_name}: {fit_result.fit}")
+        thread_safe_print(f"Last fit for Pokemon is not perfect - {pokemon_name}: {fit_result.fit}")
         return False
 
     return True

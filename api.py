@@ -14,7 +14,7 @@ from .rp_model.optimize.pokemon import process_pokemon
 from .rp_model.optimize.typedef import OptimizerFitContext, OptimizerSolvedDataEntry
 from .rp_model.type import LastFitData
 from .rp_model.utils import DataStore, pack, table
-from .rp_model.utils.thread_safe_print import thread_safe_print
+from .rp_model.utils.thread_safe_print import safe_print, thread_safe_print
 
 
 @dataclass
@@ -26,7 +26,7 @@ class RpModelFitResult:
 def print_final_result_entry(entry: tuple[bool, OptimizerSolvedDataEntry]):
     is_cached, solution = entry
 
-    print(
+    safe_print(
         f"[{"C" if is_cached else "N"}] {solution.pokemon:>25} ({solution.data_count:>3}) - "
         f"{solution.fit} ({solution.result.name})"
     )
@@ -35,19 +35,19 @@ def print_final_result_entry(entry: tuple[bool, OptimizerSolvedDataEntry]):
 def print_final_results(entries: list[tuple[bool, OptimizerSolvedDataEntry]]):
     sorted_entries = sorted(entries, key=lambda x: x[1].pokemon)
 
-    print(f"{"=" * 25} Final Results {"=" * 25}")
+    safe_print(f"{"=" * 25} Final Results {"=" * 25}")
     for entry in sorted_entries:
         print_final_result_entry(entry)
 
     imperfect_entries = [x for x in sorted_entries if x[1].result != RpFitResult.PERFECT]
     if imperfect_entries:
-        print(f"{"=" * 25} Imperfect Results {"=" * 25}")
+        safe_print(f"{"=" * 25} Imperfect Results {"=" * 25}")
         for entry in imperfect_entries:
             print_final_result_entry(entry)
 
     recalc_entries = [x for x in sorted_entries if not x[0]]
     if recalc_entries:
-        print(f"{"=" * 25} Recalculated Results {"=" * 25}")
+        safe_print(f"{"=" * 25} Recalculated Results {"=" * 25}")
         for entry in recalc_entries:
             print_final_result_entry(entry)
 
@@ -74,9 +74,9 @@ def use_or_refresh_solved_pokemon(
 
     if not is_last_fit_passed:
         if is_valid_store:
-            print(f"{pokemon_name:>25} - No data update, but the last fit was not perfect")
+            thread_safe_print(f"{pokemon_name:>25} - No data update, but the last fit was not perfect")
         else:
-            print(f"{pokemon_name:>25} - Recalculating, data updated while last fit failed")
+            thread_safe_print(f"{pokemon_name:>25} - Recalculating, data updated while last fit failed")
 
     if is_valid_store and not RP_MODEL_IS_GLOBAL_CHECK:
         return True, store.data()
