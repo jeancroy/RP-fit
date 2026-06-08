@@ -234,9 +234,9 @@ def make_precomputed_columns(data):
             (
                 s,
                 (
-                        ((data["Sub Skill 1"].str.lower() == s.lower()) & (data["Level"] >= 10)) |
-                        ((data["Sub Skill 2"].str.lower() == s.lower()) & (data["Level"] >= 25)) |
-                        ((data["Sub Skill 3"].str.lower() == s.lower()) & (data["Level"] >= 50))
+                        ((data["Sub Skill 1 EN"].str.lower() == s.lower()) & (data["Level"] >= 10)) |
+                        ((data["Sub Skill 2 EN"].str.lower() == s.lower()) & (data["Level"] >= 25)) |
+                        ((data["Sub Skill 3 EN"].str.lower() == s.lower()) & (data["Level"] >= 50))
                 ).astype(int).to_numpy()
             )
             for s in subs

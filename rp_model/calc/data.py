@@ -61,14 +61,14 @@ def download_data():
     # data below 50 we clear 3rd skill.
     # data below 25 we clear 2nd skill.
     # data below 10 we clear the 1st.
-    df.loc[df["Level"] < 50, "Sub Skill 3"] = ""
-    df.loc[df["Level"] < 25, "Sub Skill 2"] = ""
-    df.loc[df["Level"] < 10, "Sub Skill 1"] = ""
+    df.loc[df["Level"] < 50, "Sub Skill 3 EN"] = ""
+    df.loc[df["Level"] < 25, "Sub Skill 2 EN"] = ""
+    df.loc[df["Level"] < 10, "Sub Skill 1 EN"] = ""
 
     # avoid a bug in RP of freshly caught mon with skill up unlocked.
     # (We now trust the bugged data is quarantined so we can use the valid data)
-    # data = data[ ~( (data["Sub Skill 1"] == "Skill Level Up S") & (data["MS lvl"] == 2) )]
-    # data = data[ ~( (data["Sub Skill 1"] == "Skill Level Up M") & (data["MS lvl"] == 3) )]
+    # data = data[ ~( (data["Sub Skill 1 EN"] == "Skill Level Up S") & (data["MS lvl"] == 2) )]
+    # data = data[ ~( (data["Sub Skill 1 EN"] == "Skill Level Up M") & (data["MS lvl"] == 3) )]
 
     # only use data known to the Pokedex (we'll update Pokedex as needed)
     df.drop(df.index[~df["Pokemon"].isin(game.data.pokedex["Pokemon"])], inplace=True)
