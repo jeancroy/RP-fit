@@ -83,3 +83,28 @@ def refresh_pokedex():
     pokedex = pokedex.fillna(0)
     pokedex.to_pickle(game.data_files.pokedex)
     game.refresh_loaded_data()
+
+
+def normalize_ing_growth(raw_ing_growth: pd.DataFrame) -> pd.DataFrame:
+    ing_growth = raw_ing_growth.iloc[1:].copy()
+    ing_growth.columns = ["Level", "Ing Growth"]
+    ing_growth.dropna(subset=["Level", "Ing Growth"], inplace=True)
+
+    ing_growth["Level"] = pd.to_numeric(ing_growth["Level"]).astype(int)
+    ing_growth["Ing Growth"] = pd.to_numeric(
+        ing_growth["Ing Growth"].astype(str).str.rstrip("%")
+    )
+
+    return ing_growth.reset_index(drop=True)
+
+
+def refresh_ing_growth():
+    print("Refreshing ingredient growth...")
+    raw_ing_growth = download_sheet(
+        FitOptions.rp_file_id,
+        FitOptions.rp_sheet_ids["ing_growth"],
+    )
+
+    ing_growth = normalize_ing_growth(raw_ing_growth)
+    ing_growth.to_pickle(game.data_files.ing_growth)
+    game.refresh_loaded_data()

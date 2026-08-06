@@ -13,6 +13,7 @@ class FitOptions:
         "data_50_74": "161092121",
         "legacy": "2047819558",
         "pokedex": "513440248",
+        "ing_growth": "647560292",
         "main_skill": "1395455629",
     }
 

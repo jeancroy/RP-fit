@@ -5,7 +5,8 @@ from dataclasses import asdict, dataclass
 from pandas import DataFrame
 
 from .rp_model.calc import (
-    FitOptions, download_data, game, make_initial_guess, refresh_pokedex,
+    FitOptions, download_data, game, make_initial_guess, refresh_ing_growth,
+    refresh_pokedex,
 )
 from .rp_model.enum import RpFitResult
 from .rp_model.env import RP_MODEL_IS_GLOBAL_CHECK, is_pokemon_included_for_rp_model
@@ -115,6 +116,7 @@ def process_pokemon_batch(
 
 def update_fit_cached() -> RpModelFitResult:
     refresh_pokedex()
+    refresh_ing_growth()
 
     data = download_data()
     data.to_pickle(FitOptions.data_file)
