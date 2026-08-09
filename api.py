@@ -9,13 +9,16 @@ from .rp_model.calc import (
     refresh_pokedex,
 )
 from .rp_model.enum import RpFitResult
-from .rp_model.env import RP_MODEL_IS_GLOBAL_CHECK, is_pokemon_included_for_rp_model
+from .rp_model.env import is_pokemon_included_for_rp_model
 from .rp_model.optimize.check import is_last_fit_perfect
 from .rp_model.optimize.pokemon import process_pokemon
 from .rp_model.optimize.typedef import OptimizerFitContext, OptimizerSolvedDataEntry
 from .rp_model.type import LastFitData
 from .rp_model.utils import DataStore, pack, table
 from .rp_model.utils.thread_safe_print import safe_print, thread_safe_print
+
+
+RP_FIT_CACHE_VERSION = "fixed-grid-v1"
 
 
 @dataclass
@@ -26,10 +29,15 @@ class RpModelFitResult:
 
 def print_final_result_entry(entry: tuple[bool, OptimizerSolvedDataEntry]):
     is_cached, solution = entry
+    fit_summary = (
+        "exact" if solution.is_exact
+        else f"minimum MSE {solution.minimum_loss:g}"
+    )
 
     safe_print(
         f"[{"C" if is_cached else "N"}] {solution.pokemon:>25} ({solution.data_count:>3}) - "
-        f"{solution.fit} ({solution.result.name})"
+        f"{solution.fit} ({solution.result.name}; {fit_summary}; "
+        f"{solution.optimal_fit_count} global fit{"s" if solution.optimal_fit_count != 1 else ""})"
     )
 
 
@@ -66,7 +74,7 @@ def use_or_refresh_solved_pokemon(
     store = (
         DataStore(cache_path)
         # Cache by IDs and last fit result
-        .with_dependency_on(data_of_pokemon["ID"], last_fit)
+        .with_dependency_on(data_of_pokemon["ID"], last_fit, RP_FIT_CACHE_VERSION)
         .try_read_and_validate()
     )
 
@@ -79,7 +87,7 @@ def use_or_refresh_solved_pokemon(
         else:
             thread_safe_print(f"{pokemon_name:>25} - Recalculating, data updated while last fit failed")
 
-    if is_valid_store and not RP_MODEL_IS_GLOBAL_CHECK:
+    if is_valid_store:
         return True, store.data()
 
     solved_data = process_pokemon(
@@ -163,7 +171,15 @@ def update_fit_cached() -> RpModelFitResult:
     solution = DataFrame.from_records(solution_records, index="pokemon")
     result = (DataFrame({"pokemon": game.data.pokedex["Pokemon"], "pokemonId": game.data.pokedex["Pokemon ID"]})
               .join(solution, on="pokemon")
-              .rename(columns={"ing": "ingredientSplit", "skl": "skillValue", "result": "fitResult"}))
+              .rename(columns={
+                  "ing": "ingredientSplit",
+                  "skl": "skillValue",
+                  "result": "fitResult",
+                  "data_count": "dataCount",
+                  "optimal_fit_count": "optimalFitCount",
+                  "minimum_loss": "minimumLoss",
+                  "is_exact": "isExact",
+              }))
 
     # Merge with result count
     result = result.set_index("pokemon")

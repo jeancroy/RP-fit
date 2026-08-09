@@ -5,3 +5,9 @@ This directory contains Jupyter Notebooks that analyze the data from the
 An interactive version of the notebook is available on binder:
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jeancroy/RP-fit/HEAD?labpath=RP%20fit.ipynb)
+
+Set `RP_MODEL_POKEMON` to a comma-separated list to fit only selected Pokemon:
+
+```text
+RP_MODEL_POKEMON=Clefable,Noibat
+```

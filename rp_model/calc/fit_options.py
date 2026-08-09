@@ -3,7 +3,6 @@ from ..files import from_files_directory
 
 class FitOptions:
     data_file = from_files_directory("data/rp-data.pickle")
-    boostrap_file = from_files_directory("results/bootstrap-fit.pickle")
 
     rp_file_id = "1dSsvWe49DzjK6dDsAMRB-okcw9DtJrdAXQ1dHBv_UNI"
 
