@@ -13,6 +13,15 @@ def _format_fit(fit: LastFitData) -> str:
     return f"[Ing {fit.ing:>6.2%} / Skl {fit.skl:>6.2%}]"
 
 
+def _format_optimal_fits(fits: tuple[LastFitData, ...]) -> str:
+    fit_count = len(fits)
+    index_width = len(str(fit_count))
+    return "\n".join(
+        f"        [{index:>{index_width}}/{fit_count}] {_format_fit(fit)}"
+        for index, fit in enumerate(fits, start=1)
+    )
+
+
 def process_pokemon(
     last_fit: LastFitData | None,
     context: OptimizerFitContext,
@@ -35,11 +44,9 @@ def process_pokemon(
 
     result = solve_rp_grid(context)
     if result.has_multiple_solutions:
-        examples = " / ".join(_format_fit(fit) for fit in result.optimal_fits[:5])
-        suffix = " / ..." if result.optimal_fit_count > 5 else ""
         context.print_func(
-            f"Solve - {context.pokemon_name:<25} has {result.optimal_fit_count} global fits: "
-            f"{examples}{suffix}"
+            f"Solve - {context.pokemon_name:<25} has {result.optimal_fit_count} global fits:\n"
+            f"{_format_optimal_fits(result.optimal_fits)}"
         )
     if not result.is_exact:
         context.print_func(
