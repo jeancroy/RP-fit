@@ -10,18 +10,16 @@ from ..type import LastFitData
 from ..utils import remove_nan
 
 
-def get_rp_fit_result(rp_diff_clean: npt.NDArray[np.float64], /, lax: bool) -> RpFitResult:
+def get_rp_fit_result(
+    rp_diff_clean: npt.NDArray[np.float64], /, *, optimal_fit_count: int,
+) -> RpFitResult:
     if not rp_diff_clean.any():
-        return RpFitResult.PERFECT
+        return RpFitResult.PERFECT if optimal_fit_count == 1 else RpFitResult.SUBOPTIMAL
 
     if rp_diff_clean.min() >= -1 and rp_diff_clean.max() <= 1:
         avg = abs(rp_diff_clean).mean()
 
-        # Allow small rounding error (1 per 50 data) likely due to rounding reason
-        if lax and avg < 1 / 50:
-            return RpFitResult.PERFECT
-
-        # If not lax, and the error rate is < 1 per 30 data, count it as suboptimal
+        # Count sparse rounding errors as suboptimal.
         if avg < 1 / 30:
             return RpFitResult.SUBOPTIMAL
 

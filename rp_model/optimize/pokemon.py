@@ -1,11 +1,10 @@
 import numpy as np
 
-from .fit import get_rp_diff, get_rp_fit_result
+from .fit import get_rp_diff
 from .grid.main import solve_rp_grid
 from .typedef import OptimizerFitContext, OptimizerSolvedDataEntry
 from .validate import print_imperfect_fit_details
 from ..calc import make_precomputed_columns
-from ..enum import RpFitResult
 from ..type import LastFitData
 
 
@@ -29,11 +28,7 @@ def process_pokemon(
     last_fit_of_pokemon = last_fit or LastFitData.default()
     computed = make_precomputed_columns(context.pokemon_data_of_group)
     reference_rp = context.pokemon_data_of_group["RP"].to_numpy(dtype=np.float64)
-    validation_result = get_rp_fit_result(
-        get_rp_diff(context, reference_rp, computed, last_fit_of_pokemon),
-        lax=True,
-    )
-    if validation_result != RpFitResult.PERFECT:
+    if get_rp_diff(context, reference_rp, computed, last_fit_of_pokemon).any():
         print_imperfect_fit_details(
             context,
             last_fit_of_pokemon,

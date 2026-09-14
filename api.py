@@ -10,7 +10,7 @@ from .rp_model.calc import (
 )
 from .rp_model.enum import RpFitResult
 from .rp_model.env import is_pokemon_included_for_rp_model
-from .rp_model.optimize.check import is_last_fit_perfect
+from .rp_model.optimize.check import is_last_fit_exact
 from .rp_model.optimize.pokemon import process_pokemon
 from .rp_model.optimize.typedef import OptimizerFitContext, OptimizerSolvedDataEntry
 from .rp_model.type import LastFitData
@@ -18,7 +18,7 @@ from .rp_model.utils import DataStore, pack, table
 from .rp_model.utils.thread_safe_print import safe_print, thread_safe_print
 
 
-RP_FIT_CACHE_VERSION = "fixed-grid-v1"
+RP_FIT_CACHE_VERSION = "fixed-grid-v2"
 
 
 @dataclass
@@ -79,11 +79,11 @@ def use_or_refresh_solved_pokemon(
     )
 
     is_valid_store = store.is_valid()
-    is_last_fit_passed = is_last_fit_perfect(pokemon_name, data_of_pokemon, last_fit, x0, unpack_info)
+    is_last_fit_passed = is_last_fit_exact(pokemon_name, data_of_pokemon, last_fit, x0, unpack_info)
 
     if not is_last_fit_passed:
         if is_valid_store:
-            thread_safe_print(f"{pokemon_name:>25} - No data update, but the last fit was not perfect")
+            thread_safe_print(f"{pokemon_name:>25} - No data update, but the last fit was not exact")
         else:
             thread_safe_print(f"{pokemon_name:>25} - Recalculating, data updated while last fit failed")
 

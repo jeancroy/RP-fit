@@ -8,7 +8,6 @@ from ..fit import get_rp_fit_result
 from ..rate import get_ingredient_rate_ticks, get_skill_rate_ticks
 from ..typedef import OptimizerFitContext
 from ...calc import compute_rp, make_precomputed_columns
-from ...enum import RpFitResult
 from ...type import LastFitData
 from ...utils import remove_nan, round_precise
 
@@ -66,9 +65,7 @@ def solve_rp_grid(context: OptimizerFitContext) -> RpGridResult:
             f"{minimum_squared_error} != {replayed_squared_error}"
         )
 
-    fit_result = get_rp_fit_result(rp_diff, lax=False)
-    if minimum_squared_error == 0 and len(optimal_fits) > 1:
-        fit_result = RpFitResult.SUBOPTIMAL
+    fit_result = get_rp_fit_result(rp_diff, optimal_fit_count=len(optimal_fits))
     return RpGridResult(
         optimal_fits=optimal_fits,
         fit_result=fit_result,
